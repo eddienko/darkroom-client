@@ -20,10 +20,7 @@ func Copy(cfg *config.Config, src, dst string, recursive bool) error {
 		return fmt.Errorf("S3 credentials not found in user info. Please login again")
 	}
 
-	endpoint := ""
-	if endpoint == "" {
-		endpoint = strings.TrimPrefix(config.BaseURL, "https://") + ":9443"
-	}
+	endpoint := strings.TrimPrefix(config.BaseURL, "https://") + ":9443"
 
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.UserName, cfg.S3AccessToken, ""),

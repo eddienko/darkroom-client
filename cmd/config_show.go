@@ -18,7 +18,13 @@ var configShowCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		out, err := yaml.Marshal(cfg)
+		// Make a copy with sensitive fields redacted
+		redacted := *cfg
+		redacted.KubeConfig = "<redacted>"
+		redacted.S3AccessToken = "<redacted>"
+		redacted.AuthToken = "<redacted>"
+
+		out, err := yaml.Marshal(&redacted)
 		if err != nil {
 			return fmt.Errorf("failed to marshal config: %w", err)
 		}
