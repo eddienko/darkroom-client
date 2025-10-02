@@ -18,7 +18,7 @@ It provides an easy way to **submit and manage jobs on Kubernetes clusters** and
 ## 📦 Releases
 
 You can always find the latest binaries and release notes here:  
-👉 [Latest Release Notes](https://github.com/eddienko/darkroom/releases/latest)
+👉 [Latest Release Notes](https://github.com/eddienko/darkroom-client/releases/latest)
 
 Once downloaded, make the binary executable:
 
