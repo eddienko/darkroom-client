@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on tags like v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+
+          - goos: windows
+            goarch: amd64
+
+          - goos: darwin
+            goarch: amd64
+
+          - goos: darwin
+            goarch: arm64  # Apple Silicon
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          EXT=""
+          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
+          OUT="darkroom-${GOOS}-${GOARCH}${EXT}"
+          echo "🔨 Building $OUT"
+          go build -ldflags "\
+             -X 'darkroom/cmd.Version=$VERSION' \
+             -X 'darkroom/cmd.GitCommit=$(git rev-parse HEAD)' \
+             -X 'darkroom/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)'" -o "$OUT"
+
+      - name: Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            darkroom-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
