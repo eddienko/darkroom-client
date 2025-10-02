@@ -3,16 +3,50 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on tags like v1.2.3
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build and Release
+  prepare:
+    name: Prepare Release Notes
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set version
+        id: set_version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Prepare release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="v$VERSION" '
+            $0 ~ "^## " ver {flag=1; next}
+            /^## / {flag=0}
+            flag
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "- No release notes provided for $VERSION" > RELEASE_NOTES.md
+          fi
+
+      - name: Upload release notes artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+
+  build:
+    name: Build Binaries
+    needs: prepare
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -36,10 +70,8 @@ jobs:
           go-version: '1.21'
 
       - name: Prepare build info
-        id: build_info
         run: |
-          # Strip leading 'v' from tag
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ needs.prepare.outputs.version }}"
           GIT_COMMIT=$(git rev-parse HEAD)
           BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -51,42 +83,66 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
+          mkdir -p ./binaries
           EXT=""
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
-          OUT="darkroom-${GOOS}-${GOARCH}${EXT}"
+          OUT="binaries/darkroom-${GOOS}-${GOARCH}${EXT}"
           echo "🔨 Building $OUT"
           go build -ldflags "\
             -X 'darkroom/cmd.Version=$VERSION' \
             -X 'darkroom/cmd.GitCommit=$GIT_COMMIT' \
             -X 'darkroom/cmd.BuildDate=$BUILD_DATE'" -o "$OUT"
 
-      - name: Generate checksums
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: binaries/*
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries-linux-amd64
+          path: ./binaries
+      - uses: actions/download-artifact@v3
+        with:
+          name: binaries-windows-amd64
+          path: ./binaries
+      - uses: actions/download-artifact@v3
+        with:
+          name: binaries-darwin-amd64
+          path: ./binaries
+      - uses: actions/download-artifact@v3
+        with:
+          name: binaries-darwin-arm64
+          path: ./binaries
+
+      - name: Download release notes
+        uses: actions/download-artifact@v3
+        with:
+          name: release-notes
+          path: .
+
+      - name: Generate combined checksums
         run: |
-          sha256sum darkroom-* > checksums.txt
+          cd ./binaries
+          sha256sum * > ../checksums.txt
+          cd ..
+          cat checksums.txt
 
-      - name: Prepare release notes
-        id: release_notes
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          awk -v ver="v$VERSION" '
-            $0 ~ "^## " ver {flag=1; next}
-            /^## / {flag=0}
-            flag
-          ' CHANGELOG.md > RELEASE_NOTES.md
-
-          # Fallback if empty
-          if [ ! -s RELEASE_NOTES.md ]; then
-            echo "- No release notes provided for $VERSION" > RELEASE_NOTES.md
-          fi
-
-          echo "Release notes prepared for $VERSION"
-
-      - name: Upload binaries and release notes to GitHub Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            darkroom-*
+            binaries/*
             checksums.txt
+            RELEASE_NOTES.md
           body_path: RELEASE_NOTES.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
