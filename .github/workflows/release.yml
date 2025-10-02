@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on tags like v1.0.0
+      - 'v*'  # Trigger on tags like v1.2.3
 
 permissions:
   contents: write
@@ -14,19 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - goos: linux
             goarch: amd64
-
           - goos: windows
             goarch: amd64
-
           - goos: darwin
             goarch: amd64
-
           - goos: darwin
-            goarch: arm64  # Apple Silicon
+            goarch: arm64
 
     steps:
       - name: Checkout code
@@ -37,26 +35,55 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Prepare build info
+        id: build_info
+        run: |
+          # Strip leading 'v' from tag
+          VERSION="${GITHUB_REF_NAME#v}"
+          GIT_COMMIT=$(git rev-parse HEAD)
+          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "GIT_COMMIT=$GIT_COMMIT" >> $GITHUB_ENV
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+
       - name: Build binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          VERSION: ${{ github.ref_name }}
         run: |
           EXT=""
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
           OUT="darkroom-${GOOS}-${GOARCH}${EXT}"
           echo "🔨 Building $OUT"
           go build -ldflags "\
-             -X 'darkroom/cmd.Version=$VERSION' \
-             -X 'darkroom/cmd.GitCommit=$(git rev-parse HEAD)' \
-             -X 'darkroom/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)'" -o "$OUT"
+            -X 'darkroom/cmd.Version=$VERSION' \
+            -X 'darkroom/cmd.GitCommit=$GIT_COMMIT' \
+            -X 'darkroom/cmd.BuildDate=$BUILD_DATE'" -o "$OUT"
 
-      - name: Upload binaries to GitHub Release
+      - name: Generate checksums
+        run: |
+          sha256sum darkroom-* > checksums.txt
+
+      - name: Prepare release notes
+        id: release_notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="v$VERSION" '
+            $0 ~ "^## " ver {flag=1; next}
+            /^## / {flag=0}
+            flag
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          # Fallback if empty
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "- No release notes provided for $VERSION" > RELEASE_NOTES.md
+          fi
+
+          echo "Release notes prepared for $VERSION"
+
+      - name: Upload binaries and release notes to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             darkroom-*
+            checksums.txt
+          body_path: RELEASE_NOTES.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
