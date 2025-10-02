@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 
-## v0.2.?
+## v0.2.5
 
 - First attempt at colouring error messages and other terminal outputs
 - Check that a file exists in the remote storage before deleting
@@ -13,6 +13,12 @@ All notable changes to this project will be documented in this file.
 
 - `darkroom config set` - add a new command to set variables directly in the configuration file.
 - `darkroom storage mb` - add a new command to create a bucket
+
+### Documentation
+
+- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.5/README.md)
+- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.5/docs/commands.md)
+
 
 ## v0.2.4
 
