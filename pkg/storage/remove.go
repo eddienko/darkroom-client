@@ -34,8 +34,18 @@ func Remove(cfg *config.Config, target string, recursive bool) error {
 	ctx := context.Background()
 
 	if !recursive {
+		// Check if object exists
+		_, err := client.StatObject(ctx, bucket, prefix, minio.StatObjectOptions{})
+		if err != nil {
+			resp := minio.ToErrorResponse(err)
+			if resp.Code == "NoSuchKey" {
+				return fmt.Errorf("Failed to remove '%s'. Object does not exist", target)
+			}
+			return err
+		}
+
 		// Delete single object
-		err := client.RemoveObject(ctx, bucket, prefix, minio.RemoveObjectOptions{})
+		err = client.RemoveObject(ctx, bucket, prefix, minio.RemoveObjectOptions{})
 		if err != nil {
 			return err
 		}
