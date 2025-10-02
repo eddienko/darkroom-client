@@ -15,21 +15,24 @@ It provides an easy way to **submit and manage jobs on Kubernetes clusters** and
 
 ---
 
-## Installation
+## 📦 Releases
 
-Clone and build:
+You can always find the latest binaries and release notes here:  
+👉 [Latest Release Notes](https://github.com/your-username/darkroom/releases/latest)
+
+Once downloaded, make the binary executable:
 
 ```bash
-git clone https://github.com/your-org/darkroom.git
-cd darkroom
-go build -o darkroom ./main.go
-````
+chmod +x darkroom
+```   
 
-Make it available system-wide:
+and make it available system-wide, e.g.:
 
 ```bash
 mv darkroom /usr/local/bin/
 ```
+
+or in any directory in your `$PATH`.
 
 ---
 
@@ -85,6 +88,10 @@ mv darkroom /usr/local/bin/
 | `darkroom storage presign <path>`           | Generate download/upload URL                |
 | `darkroom storage sync <localdir> <remote>` | Sync directory to remote (add `--checksum`) |
 | `darkroom config show`                      | Show decrypted config (redacted secrets)    |
+| `darkroom version`                          | Show CLI version, Git commit, and build date|
+
+Note that not all commands and flags are currently in production use.
+See the latest release notes for details.
 
 ---
 
@@ -96,6 +103,14 @@ For detailed usage, arguments, and examples see:
 ---
 
 ## Development
+
+Clone and build:
+
+```bash
+git clone https://github.com/your-org/darkroom.git
+cd darkroom
+go build -o darkroom ./main.go
+````
 
 Run with debug enabled:
 

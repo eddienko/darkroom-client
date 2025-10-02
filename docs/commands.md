@@ -23,8 +23,9 @@ This document provides a complete reference for all `darkroom` commands, flags, 
     - [Stat](#stat)
     - [Presign](#presign)
     - [Sync](#sync)
-  - [Configuration Commands](#configuration-commands)
+  - [Other Commands](#other-commands)
     - [Show Config](#show-config)
+    - [Version](#version)
   - [Global Flags](#global-flags)
 
 ---
@@ -203,7 +204,7 @@ darkroom storage sync <localDir> <remotePath> [--checksum]
 
 ---
 
-## Configuration Commands
+## Other Commands
 
 ### Show Config
 
@@ -213,6 +214,15 @@ darkroom config show
 
 * Prints the current configuration (decrypted).
 * Sensitive fields (like `KubeConfig` and `S3AccessToken`) are redacted.
+
+
+### Version
+
+```bash
+darkroom version
+```
+
+* Displays the current version of the Darkroom CLI, along with Git commit hash and build date.
 
 ---
 
