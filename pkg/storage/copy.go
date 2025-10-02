@@ -2,15 +2,20 @@ package storage
 
 import (
 	"context"
+	"crypto/md5"
 	"darkroom/pkg/config"
+	"encoding/hex"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"io"
+
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 // Copy supports both upload (local → remote) and download (remote → local).
@@ -20,12 +25,7 @@ func Copy(cfg *config.Config, src, dst string, recursive bool) error {
 		return fmt.Errorf("S3 credentials not found in user info. Please login again")
 	}
 
-	endpoint := strings.TrimPrefix(config.BaseURL, "https://") + ":9443"
-
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.UserName, cfg.S3AccessToken, ""),
-		Secure: true,
-	})
+	client, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
 		return fmt.Errorf("failed to create MinIO client: %w", err)
 	}
@@ -52,6 +52,7 @@ func Copy(cfg *config.Config, src, dst string, recursive bool) error {
 
 // --- Upload helpers ---
 
+// uploadFile uploads a file to MinIO with a schollz/progressbar that works with multi-part uploads.
 func uploadFile(client *minio.Client, localPath, remotePath string) error {
 	parts := strings.SplitN(remotePath, "/", 2)
 	if len(parts) < 1 {
@@ -67,21 +68,75 @@ func uploadFile(client *minio.Client, localPath, remotePath string) error {
 		}
 	}
 
-	_, err := client.FPutObject(
+	// Open file
+	file, err := os.Open(localPath)
+	if err != nil {
+		return fmt.Errorf("cannot open file: %w", err)
+	}
+	defer file.Close()
+
+	// Get file info
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("cannot stat file: %w", err)
+	}
+	size := stat.Size()
+	md5sum, _ := computeFileMD5(localPath)
+
+	// Create progress bar with nicer config for large files
+	bar := progressbar.NewOptions64(
+		size,
+		progressbar.OptionSetDescription("Uploading"),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionThrottle(65), // smooth updates
+		progressbar.OptionShowCount(),  // show counters
+		// progressbar.OptionShowIts(),            // show speed
+		progressbar.OptionSetPredictTime(true), // ETA
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "█",
+			SaucerHead:    "▶",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+	)
+
+	// Wrap file with TeeReader so every read updates the bar
+	reader := io.TeeReader(file, bar)
+
+	// Upload file (MinIO Go handles multipart under the hood for large files)
+	objInfo, err := client.PutObject(
 		context.Background(),
 		bucket,
 		objectName,
-		localPath,
-		minio.PutObjectOptions{ContentType: "application/octet-stream"},
+		reader,
+		size,
+		minio.PutObjectOptions{
+			ContentType: "application/octet-stream",
+			UserMetadata: map[string]string{
+				"X-Amz-Meta-Md5sum": md5sum,
+			},
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 
-	fmt.Printf("✅ Uploaded %s → %s/%s\n", localPath, bucket, objectName)
+	// Verify MD5 for small files only
+	if size <= 5*1024*1024 { // 5 MB
+		remoteETag := objInfo.ETag
+		remoteETag = strings.Trim(remoteETag, `"`)
+		if md5sum != remoteETag {
+			return fmt.Errorf("MD5 mismatch for %s: local=%s remote=%s", objectName, md5sum, remoteETag)
+		}
+	}
+
+	fmt.Printf("\n✅ Uploaded %s → %s/%s\n", localPath, bucket, objectName)
 	return nil
 }
 
+// uploadDir uploads a whole directory recursively with a global progress bar.
 func uploadDir(client *minio.Client, localDir, remotePath string) error {
 	parts := strings.SplitN(remotePath, "/", 2)
 	if len(parts) < 1 {
@@ -93,30 +148,108 @@ func uploadDir(client *minio.Client, localDir, remotePath string) error {
 		prefix = strings.TrimSuffix(parts[1], "/") + "/"
 	}
 
+	// 1. Pre-scan directory to get total size
+	var totalSize int64
 	err := filepath.WalkDir(localDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			info, statErr := os.Stat(path)
+			if statErr != nil {
+				return statErr
+			}
+			totalSize += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to scan directory: %w", err)
+	}
+
+	// 2. Create a single global progress bar
+	bar := progressbar.NewOptions64(
+		totalSize,
+		progressbar.OptionSetDescription("Uploading"),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionThrottle(65),
+		progressbar.OptionShowCount(),
+		// progressbar.OptionShowIts(),
+		progressbar.OptionSetPredictTime(true),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "█",
+			SaucerHead:    "▶",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+	)
+
+	// 3. Walk directory again and upload with progress tracking
+	err = filepath.WalkDir(localDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
+
 		relPath, _ := filepath.Rel(localDir, path)
 		objectName := filepath.ToSlash(filepath.Join(prefix, relPath))
 
-		_, err = client.FPutObject(
+		// open file
+		file, openErr := os.Open(path)
+		if openErr != nil {
+			return openErr
+		}
+		defer file.Close()
+
+		// get file size
+		info, statErr := file.Stat()
+		if statErr != nil {
+			return statErr
+		}
+		size := info.Size()
+		md5sum, _ := computeFileMD5(path)
+
+		// wrap with progress bar
+		reader := io.TeeReader(file, bar)
+
+		objInfo, putErr := client.PutObject(
 			context.Background(),
 			bucket,
 			objectName,
-			path,
-			minio.PutObjectOptions{ContentType: "application/octet-stream"},
+			reader,
+			size,
+			minio.PutObjectOptions{
+				ContentType: "application/octet-stream",
+				UserMetadata: map[string]string{
+					"X-Amz-Meta-Md5sum": md5sum,
+				},
+			},
 		)
-		if err != nil {
-			return fmt.Errorf("upload failed: %w", err)
+		if putErr != nil {
+			return fmt.Errorf("upload failed: %w", putErr)
 		}
-		fmt.Printf("✅ Uploaded %s → %s/%s\n", path, bucket, objectName)
+
+		// Verify MD5 for small files only
+		if size <= 5*1024*1024 { // 5 MB
+			remoteETag := objInfo.ETag
+			remoteETag = strings.Trim(remoteETag, `"`)
+			if md5sum != remoteETag {
+				return fmt.Errorf("MD5 mismatch for %s: local=%s remote=%s", objectName, md5sum, remoteETag)
+			}
+		}
+
 		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\n✅ Finished uploading directory %s → %s/%s\n", localDir, bucket, prefix)
+	return nil
 }
 
 // --- Download helpers ---
@@ -195,4 +328,19 @@ func dirExists(path string) bool {
 		return false
 	}
 	return info.IsDir()
+}
+
+func computeFileMD5(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("cannot open file: %w", err)
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("cannot read file: %w", err)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type entry struct {
@@ -48,17 +47,7 @@ func List(cfg *config.Config, arg string) error {
 		return fmt.Errorf("S3 credentials not found in user info. Please login again")
 	}
 
-	// Build endpoint
-	endpoint := ""
-	if endpoint == "" {
-		endpoint = strings.TrimPrefix(config.BaseURL, "https://") + ":9443"
-	}
-
-	// Init MinIO client
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.UserName, cfg.S3AccessToken, ""),
-		Secure: true,
-	})
+	client, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
 		return fmt.Errorf("failed to create MinIO client: %w", err)
 	}

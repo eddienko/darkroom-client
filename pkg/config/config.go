@@ -44,6 +44,7 @@ type Config struct {
 	AuthToken     string `yaml:"authToken"`
 	S3AccessToken string `yaml:"s3AccessToken"`
 	UserName      string `yaml:"username"`
+	UserId        int    `yaml:"userId"`
 }
 
 // New returns a default config

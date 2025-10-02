@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 // Stat fetches metadata for a remote object
@@ -21,14 +20,10 @@ func Stat(cfg *config.Config, target string) error {
 	}
 
 	// Initialize minio client
-	minioClient, err := minio.New(strings.TrimPrefix(config.BaseURL, "https://")+":9443", &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: true,
-	})
+	minioClient, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
-		return fmt.Errorf("failed to connect to storage: %w", err)
+		return fmt.Errorf("failed to create MinIO client: %w", err)
 	}
-
 	parts := strings.SplitN(target, "/", 2)
 	if len(parts) < 2 {
 		return fmt.Errorf("please specify object path as bucket/object")
@@ -42,12 +37,18 @@ func Stat(cfg *config.Config, target string) error {
 	}
 
 	fmt.Println("------------------------------------------------------------------------------------")
-	fmt.Printf("Bucket:       %s\n", bucket)
-	fmt.Printf("Object:       %s\n", object)
-	fmt.Printf("Size:         %d bytes\n", info.Size)
-	fmt.Printf("LastModified: %s\n", info.LastModified.Format("2006-01-02 15:04:05"))
-	fmt.Printf("ETag:         %s\n", info.ETag)
-	fmt.Printf("ContentType:  %s\n", info.ContentType)
+	fmt.Printf("Bucket       : %s\n", bucket)
+	fmt.Printf("Object       : %s\n", object)
+	fmt.Printf("Size         : %s bytes\n", humanizeSize(info.Size))
+	fmt.Printf("LastModified : %s\n", info.LastModified.Format("2006-01-02 15:04:05"))
+	fmt.Printf("ETag         : %s\n", info.ETag)
+	fmt.Printf("ContentType  : %s\n", info.ContentType)
+
+	// Access user-defined metadata
+	for k, v := range info.UserMetadata {
+		fmt.Printf("%-12s : %s\n", k, v)
+	}
+
 	fmt.Println("------------------------------------------------------------------------------------")
 
 	return nil

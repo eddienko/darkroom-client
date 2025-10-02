@@ -48,6 +48,7 @@ func Login(cfg *config.Config, username string, password []byte) error {
 	cfg.S3AccessToken = userInfo.S3AccessToken
 	cfg.APIEndpoint = config.BaseURL
 	cfg.UserName = userInfo.Username
+	cfg.UserId = userInfo.ID
 
 	if *debug {
 		fmt.Println("Fetched kubeconfig and user info successfully.")

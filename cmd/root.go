@@ -19,6 +19,9 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.SilenceUsage = true
+	rootCmd.SilenceErrors = false
+
 	var err error
 	cfg, err = config.Load()
 	if err != nil {

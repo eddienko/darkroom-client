@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 // Remove deletes a single object or, if recursive is true, all objects under the prefix
@@ -19,10 +18,7 @@ func Remove(cfg *config.Config, target string, recursive bool) error {
 		return fmt.Errorf("S3 credentials not found")
 	}
 
-	client, err := minio.New(strings.TrimPrefix(config.BaseURL, "https://")+":9443", &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: true,
-	})
+	client, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
 		return err
 	}
