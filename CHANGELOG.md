@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.2.?
+
+- First attempt at colouring error messages and other terminal outputs
+- Check that a file exists in the remote storage before deleting
+- Initial support for a key to be sent in all request headers
+
+### New commands
+
+- `darkroom config set` - add a new command to set variables directly in the configuration file.
+- `darkroom storage mb` - add a new command to create a bucket
+
 ## v0.2.4
 
 Initial release of Darkroom CLI for storage management and authentication.
