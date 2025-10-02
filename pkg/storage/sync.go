@@ -21,7 +21,7 @@ type SyncOptions struct {
 }
 
 func Sync(cfg *config.Config, localPath, remotePath string, opts SyncOptions) error {
-	accessKey := cfg.UserName
+	accessKey := cfg.S3AccessUser
 	secretKey := cfg.S3AccessToken
 	if accessKey == "" || secretKey == "" {
 		return fmt.Errorf("S3 credentials missing")

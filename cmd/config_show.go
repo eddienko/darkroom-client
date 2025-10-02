@@ -10,7 +10,7 @@ import (
 )
 
 var configShowCmd = &cobra.Command{
-	Use:   "config show",
+	Use:   "show",
 	Short: "Show the current darkroom config (decrypted)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
@@ -35,5 +35,5 @@ var configShowCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(configShowCmd)
+	configCmd.AddCommand(configShowCmd)
 }

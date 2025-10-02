@@ -12,7 +12,7 @@ import (
 
 // Stat fetches metadata for a remote object
 func Stat(cfg *config.Config, target string) error {
-	accessKey := cfg.UserName
+	accessKey := cfg.S3AccessUser
 	secretKey := cfg.S3AccessToken
 	if accessKey == "" || secretKey == "" {
 		fmt.Println("S3 credentials not found in user info. Please login again.")

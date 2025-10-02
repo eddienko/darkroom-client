@@ -18,7 +18,7 @@ func Remove(cfg *config.Config, target string, recursive bool) error {
 		return fmt.Errorf("S3 credentials not found")
 	}
 
-	client, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
+	client, err := MinioClient(cfg.S3AccessUser, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
 		return err
 	}

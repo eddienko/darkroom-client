@@ -47,7 +47,7 @@ func List(cfg *config.Config, arg string) error {
 		return fmt.Errorf("S3 credentials not found in user info. Please login again")
 	}
 
-	client, err := MinioClient(cfg.UserName, cfg.S3AccessToken, true, cfg.UserId)
+	client, err := MinioClient(cfg.S3AccessUser, cfg.S3AccessToken, true, cfg.UserId)
 	if err != nil {
 		return fmt.Errorf("failed to create MinIO client: %w", err)
 	}

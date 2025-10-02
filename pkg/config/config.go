@@ -17,6 +17,7 @@ import (
 
 var debug bool = os.Getenv("DARKROOM_DEBUG") == "true"
 var hardcodedKey = "&1cq^f_5ab7-$3yc-b(^$7t_=_c_@0gt+r2^%3mzee6jsaje-t"
+var DarkroomSecret = "a931ace429e10686a1ff9a5636fe584dc5662c3ea270fca263e54e93d05f08ca"
 
 var (
 	BaseURL        = getBaseURL()
@@ -42,6 +43,7 @@ type Config struct {
 	APIEndpoint   string `yaml:"apiEndpoint"`
 	KubeConfig    string `yaml:"kubeConfig"`
 	AuthToken     string `yaml:"authToken"`
+	S3AccessUser  string `yaml:"s3AccessUser"`
 	S3AccessToken string `yaml:"s3AccessToken"`
 	UserName      string `yaml:"username"`
 	UserId        int    `yaml:"userId"`

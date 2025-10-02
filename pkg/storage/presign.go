@@ -15,7 +15,7 @@ import (
 
 // Presign generates a presigned URL for an object, supporting GET or PUT
 func Presign(cfg *config.Config, target string, expiry time.Duration, method string) (*url.URL, error) {
-	accessKey := cfg.UserName
+	accessKey := cfg.S3AccessUser
 	secretKey := cfg.S3AccessToken
 	if accessKey == "" || secretKey == "" {
 		fmt.Println("S3 credentials not found in user info. Please login again.")
