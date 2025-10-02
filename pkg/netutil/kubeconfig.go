@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-        "strings"
+	"strings"
 
 	"sigs.k8s.io/yaml"
 )
@@ -45,7 +45,7 @@ func FetchKubeconfig(cfg *config.Config) (string, error) {
 		return "", fmt.Errorf("failed to format kubeconfig: %w", err)
 	}
 
-        // Convert to string and remove the first line if it's "|"
+	// Convert to string and remove the first line if it's "|"
 	lines := strings.Split(string(out), "\n")
 	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "|" {
 		lines = lines[1:]
