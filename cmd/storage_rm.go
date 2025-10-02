@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/config"
 	"darkroom/pkg/storage"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -29,12 +29,12 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
-			return fmt.Errorf("failed to load config: %w", err)
+			return colorfmt.Error("%v", err)
 		}
 		target := args[0]
 
 		if err := storage.Remove(cfg, target, rmRecursive); err != nil {
-			return fmt.Errorf("remove failed: %w", err)
+			return colorfmt.Error("%v", err)
 		}
 		return nil
 	},

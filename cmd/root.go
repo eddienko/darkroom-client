@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"darkroom/pkg/config"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -20,12 +19,11 @@ func Execute() error {
 
 func init() {
 	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = false
+	rootCmd.SilenceErrors = true
 
 	var err error
 	cfg, err = config.Load()
 	if err != nil {
-		fmt.Printf("Warning: could not load config: %v\n", err)
 		cfg = config.New()
 	}
 
