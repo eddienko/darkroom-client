@@ -23,8 +23,10 @@ This document provides a complete reference for all `darkroom` commands, flags, 
     - [Stat](#stat)
     - [Presign](#presign)
     - [Sync](#sync)
+    - [Make Bucket](#make-bucket)
   - [Other Commands](#other-commands)
     - [Show Config](#show-config)
+    - [Set configuration value](#set-configuration-value)
     - [Version](#version)
   - [Global Flags](#global-flags)
 
@@ -202,6 +204,14 @@ darkroom storage sync <localDir> <remotePath> [--checksum]
 * Synchronizes local directory to remote.
 * `--checksum`: compare checksums to avoid unnecessary uploads.
 
+### Make Bucket
+
+```bash
+darkroom storage mb <bucketName>
+```
+
+* Creates a new S3 bucket with the specified name.
+
 ---
 
 ## Other Commands
@@ -215,6 +225,13 @@ darkroom config show
 * Prints the current configuration (decrypted).
 * Sensitive fields (like `KubeConfig` and `S3AccessToken`) are redacted.
 
+### Set configuration value
+
+```bash
+darkroom config set myVar=<value>
+```
+
+* Sets a configuration variable to a new value.
 
 ### Version
 

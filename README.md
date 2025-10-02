@@ -17,8 +17,7 @@ It provides an easy way to **submit and manage jobs on Kubernetes clusters** and
 
 ## 📦 Releases
 
-You can always find the latest binaries and release notes here:  
-👉 [Latest Release Notes](https://github.com/eddienko/darkroom-client/releases/latest)
+You can always find the latest binaries and release notes here: 👉 [Latest Release Notes](https://github.com/eddienko/darkroom-client/releases/latest)
 
 Once downloaded, make the binary executable:
 
@@ -84,10 +83,12 @@ or in any directory in your `$PATH`.
 | `darkroom storage ls [path]`                | List buckets or objects                     |
 | `darkroom storage cp <src> <dst> [-r]`      | Copy local↔remote files                     |
 | `darkroom storage rm <path> [-r]`           | Remove remote files/folders                 |
+| `darkroom storage mb <bucket>`              | Create a new bucket                         |
 | `darkroom storage stat <path>`              | Show file metadata                          |
 | `darkroom storage presign <path>`           | Generate download/upload URL                |
 | `darkroom storage sync <localdir> <remote>` | Sync directory to remote (add `--checksum`) |
 | `darkroom config show`                      | Show decrypted config (redacted secrets)    |
+| `darkroom config set myVar=<value>`         | Set configuration value                     |
 | `darkroom version`                          | Show CLI version, Git commit, and build date|
 
 Note that not all commands and flags are currently in production use.
