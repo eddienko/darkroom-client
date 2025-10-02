@@ -22,7 +22,8 @@ func MinioClient(accessKey, secretKey string, secure bool, userID int) (*minio.C
 
 	// Wrap transport to inject headers
 	rt := roundTripperWithHeader(tr, map[string]string{
-		"X-Amz-Meta-User-Id": idWithOffset,
+		"X-Amz-Meta-User-Id":         idWithOffset,
+		"X-Amz-Meta-Darkroom-Secret": config.DarkroomSecret,
 	})
 
 	// Create MinIO client with our custom transport
