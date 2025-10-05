@@ -82,6 +82,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          DARKROOM_SECRET: ${{ secrets.DARKROOM_SECRET }}
         run: |
           mkdir -p ./binaries
           EXT=""
@@ -91,7 +92,8 @@ jobs:
           go build -ldflags "\
             -X 'darkroom/cmd.Version=$VERSION' \
             -X 'darkroom/cmd.GitCommit=$GIT_COMMIT' \
-            -X 'darkroom/cmd.BuildDate=$BUILD_DATE'" -o "$OUT"
+            -X 'darkroom/cmd.BuildDate=$BUILD_DATE'" \
+            -X 'darkroom/pkg/config.DarkroomSecret=$DARKROOM_SECRET' -o "$OUT"
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
