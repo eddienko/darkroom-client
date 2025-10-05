@@ -16,7 +16,7 @@ import (
 )
 
 var debug bool = os.Getenv("DARKROOM_DEBUG") == "true"
-var hardcodedKey = "&1cq^f_5ab7-$3yc-b(^$7t_=_c_@0gt+r2^%3mzee6jsaje-t"
+var EncryptionKey = "&1cq^f_5ab7-$3yc-b(^$7t_=_c_@0gt+r2^%3mzee6jsaje-t"
 var DarkroomSecret = "a931ace429e10686a1ff9a5636fe584dc5662c3ea270fca263e54e93d05f08ca"
 
 var (
@@ -73,13 +73,13 @@ func getMachineID() (string, error) {
 	return "", fmt.Errorf("no suitable MAC address found")
 }
 
-// deriveFinalKey combines hardcoded key + machine ID into a 32-byte AES key.
+// deriveFinalKey combines encryption key + machine ID into a 32-byte AES key.
 func deriveFinalKey() ([]byte, error) {
 	machinePart, err := getMachineID()
 	if err != nil {
 		return nil, err
 	}
-	combined := hardcodedKey + machinePart
+	combined := EncryptionKey + machinePart
 	hash := sha256.Sum256([]byte(combined))
 	return hash[:], nil
 }
