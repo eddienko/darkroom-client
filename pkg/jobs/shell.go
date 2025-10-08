@@ -21,7 +21,10 @@ func OpenShell(cfg *config.Config, jobName string) error {
 		return fmt.Errorf("not authenticated, please login first")
 	}
 
-	userInfo := auth.GetUserInfo(cfg.AuthToken)
+	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
+	if err != nil {
+		return fmt.Errorf("failed to get user info: %w", err)
+	}
 	namespace := "jupyter-" + userInfo.Username
 
 	// Load kubeconfig

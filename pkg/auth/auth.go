@@ -42,7 +42,10 @@ func Login(cfg *config.Config, username string, password []byte) error {
 		return fmt.Errorf("failed to fetch kubeconfig: %w", err)
 	}
 
-	userInfo := GetUserInfo(cfg.AuthToken)
+	userInfo, err := GetUserInfo(cfg.AuthToken)
+	if err != nil {
+		return fmt.Errorf("failed to get user info from server %w", err)
+	}
 
 	cfg.KubeConfig = kubeconfigContent
 	cfg.S3AccessToken = userInfo.S3AccessToken
@@ -119,14 +122,14 @@ func validateOTP(uuid, token string, debug *bool) LoginResponse {
 
 }
 
-func GetUserInfo(token string) UserInfo {
-	debug := config.Debug
+func GetUserInfo(token string) (UserInfo, error) {
+	// debug := config.Debug
 	if token == "" {
-		exitWithError("Error: No auth token found. Please login first.", nil)
+		return UserInfo{}, fmt.Errorf("No auth token found. Please login first.")
 	}
 	req, err := http.NewRequest("GET", config.AboutMeURL, nil)
 	if err != nil {
-		exitWithError("Error creating request:", err)
+		return UserInfo{}, fmt.Errorf("error creating request %w", err)
 	}
 
 	// Set Authorization header with Bearer token
@@ -135,28 +138,32 @@ func GetUserInfo(token string) UserInfo {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		exitWithError("Error sending request:", err)
+		return UserInfo{}, fmt.Errorf("error sending request %w", err)
 	}
 	defer resp.Body.Close()
 
-	if *debug {
-		fmt.Println("User Info Response Status:", resp.Status)
-		fmt.Println("User Info Response Headers:", resp.Header)
-	}
+	// if *debug {
+	// 	fmt.Println("User Info Response Status:", resp.Status)
+	// 	fmt.Println("User Info Response Headers:", resp.Header)
+	// }
 
 	// Decode response (adjust structure as needed)
 	var userInfo UserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
-		exitWithError("Error decoding user info:", err)
+		return UserInfo{}, fmt.Errorf("error decoding server response %w", err)
 	}
 
 	// Print user info for debug
-	if *debug {
-		userJson, _ := json.MarshalIndent(userInfo, "", "  ")
-		fmt.Println("User Info:", string(userJson))
+	// if *debug {
+	// 	userJson, _ := json.MarshalIndent(userInfo, "", "  ")
+	// 	fmt.Println("User Info:", string(userJson))
+	// }
+
+	if userInfo.Username == "" {
+		return UserInfo{}, fmt.Errorf("error retrieving user info from server. Please login.")
 	}
 
-	return userInfo
+	return userInfo, nil
 }
 
 func exitWithError(msg string, err error) {

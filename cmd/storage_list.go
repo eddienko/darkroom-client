@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/storage"
 
 	"github.com/spf13/cobra"
@@ -17,12 +18,12 @@ var storageListCmd = &cobra.Command{
 			path = args[0]
 			err := storage.List(cfg, path)
 			if err != nil {
-				return err
+				return colorfmt.Error("failed to list storage path %q: %v", path, err)
 			}
 		} else { // no path provided, list buckets
 			err := storage.List(cfg, path)
 			if err != nil {
-				return err
+				return colorfmt.Error("failed to list storage buckets: %v", err)
 			}
 		}
 

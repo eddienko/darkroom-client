@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/config"
 	"darkroom/pkg/jobs"
 	"fmt"
@@ -17,7 +18,11 @@ var jobListCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		return jobs.ListJobs(cfg)
+		err = jobs.ListJobs(cfg)
+		if err != nil {
+			return colorfmt.Error("%v", err)
+		}
+		return nil
 	},
 }
 

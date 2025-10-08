@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"darkroom/pkg/colorfmt"
-	"darkroom/pkg/config"
 	"darkroom/pkg/storage"
 
 	"github.com/spf13/cobra"

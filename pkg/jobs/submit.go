@@ -48,7 +48,10 @@ func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory, jobType,
 	}
 
 	// Get user info
-	userInfo := auth.GetUserInfo(cfg.AuthToken)
+	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
+	if err != nil {
+		return "", fmt.Errorf("failed to get user info: %w", err)
+	}
 	fmt.Printf("Submitting job as user: %s\n", userInfo.Username)
 
 	// Load kubeconfig

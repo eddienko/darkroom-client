@@ -1,8 +1,14 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
+	"darkroom/pkg/config"
 	"darkroom/pkg/jobs"
+	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
