@@ -39,20 +39,30 @@ func getBaseURL() string {
 	return "https://darkroom.ast.cam.ac.uk"
 }
 
+type ResourceLimits struct {
+	MaxCPU    float64 `yaml:"max_cpu"`
+	MaxMemory int     `yaml:"max_memory"` // in MiB
+}
+
 type Config struct {
-	APIEndpoint   string `yaml:"apiEndpoint"`
-	KubeConfig    string `yaml:"kubeConfig"`
-	AuthToken     string `yaml:"authToken"`
-	S3AccessUser  string `yaml:"s3AccessUser"`
-	S3AccessToken string `yaml:"s3AccessToken"`
-	UserName      string `yaml:"username"`
-	UserId        int    `yaml:"userId"`
+	APIEndpoint   string         `yaml:"apiEndpoint"`
+	KubeConfig    string         `yaml:"kubeConfig"`
+	AuthToken     string         `yaml:"authToken"`
+	S3AccessUser  string         `yaml:"s3AccessUser"`
+	S3AccessToken string         `yaml:"s3AccessToken"`
+	UserName      string         `yaml:"username"`
+	UserId        int            `yaml:"userId"`
+	ResourceLimit ResourceLimits `yaml:"resource_limits"`
 }
 
 // New returns a default config
 func New() *Config {
 	return &Config{
 		APIEndpoint: BaseURL,
+		ResourceLimit: ResourceLimits{
+			MaxCPU:    100.0,
+			MaxMemory: 262144, // 256 GiB
+		},
 	}
 }
 
