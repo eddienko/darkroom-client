@@ -191,11 +191,14 @@ darkroom storage presign <remotePath>
 ```
 
 * Generates a presigned URL for download or upload.
+* Download URLs allow sharing files with external users.
 * Upload URLs can be used to send data to remote storage securely.
 
 ---
 
 ### Sync
+
+**This command in in development.**
 
 ```bash
 darkroom storage sync <localDir> <remotePath> [--checksum]
@@ -205,6 +208,8 @@ darkroom storage sync <localDir> <remotePath> [--checksum]
 * `--checksum`: compare checksums to avoid unnecessary uploads.
 
 ### Make Bucket
+
+In general users do not have permissions to create buckets.
 
 ```bash
 darkroom storage mb <bucketName>

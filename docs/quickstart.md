@@ -68,13 +68,19 @@ darkroom job list
 darkroom job status test-job-1
 ```
 
-6. Execute a shell inside the running job. This opens a shell in the remote container running the job.
+6. Display output logs.
+
+```bash
+dadkroom job log test-job-1
+```
+
+7. Execute a shell inside the running job. This opens a shell in the remote container running the job.
 
 ```bash
 darkroom job shell test-job-1
 ```
 
-7. Cancel/remove a job.
+8. Cancel/remove a job.
 
 ```bash
 darkroom job cancel test-job-1
