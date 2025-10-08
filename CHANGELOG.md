@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.2.7
+
+- Use GitHub secrets to add secure encryption and server keys
+- Add validation of jobs resource requests
+- Improved job shell command
+- Improve error handling and reporting
+
+
+### Documentation
+
+- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.6/README.md)
+- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.6/docs/quickstart.md)
+- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.6/docs/commands.md)
+
+
 ## v0.2.5
 
 - First attempt at colouring error messages and other terminal outputs
