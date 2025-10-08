@@ -30,10 +30,10 @@ Examples:
 `,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
-		if err != nil {
-			return colorfmt.Error("%v", err)
-		}
+		// cfg, err := config.Load()
+		// if err != nil {
+		// 	return colorfmt.Error("%v", err)
+		// }
 		src := args[0]
 		dst := args[1]
 

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"darkroom/pkg/config"
 	"darkroom/pkg/storage"
 	"fmt"
 
@@ -22,10 +21,10 @@ var storageSyncCmd = &cobra.Command{
 		localPath := args[0]
 		remotePath := args[1]
 
-		cfg, err := config.Load()
-		if err != nil {
-			return fmt.Errorf("failed to load config: %w", err)
-		}
+		// cfg, err := config.Load()
+		// if err != nil {
+		// 	return fmt.Errorf("failed to load config: %w", err)
+		// }
 
 		opts := storage.SyncOptions{
 			Delete:    syncDelete,

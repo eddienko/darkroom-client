@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"darkroom/pkg/config"
 	"darkroom/pkg/storage"
 	"fmt"
 	"time"
@@ -24,10 +23,10 @@ Examples:
 `,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
-		if err != nil {
-			return fmt.Errorf("failed to load config: %w", err)
-		}
+		// cfg, err := config.Load()
+		// if err != nil {
+		// 	return fmt.Errorf("failed to load config: %w", err)
+		// }
 
 		expiry, err := time.ParseDuration(expireStr)
 		if err != nil {
