@@ -35,38 +35,10 @@ or in any directory in your `$PATH`.
 
 ---
 
-## Quick Start
+## Quick start
 
-1. **Login** to Darkroom:
-
-   ```bash
-   darkroom login
-   ```
-
-   This will securely store your credentials and kubeconfig in
-   `~/.darkroom/config.yaml.enc`.
-
-2. **Submit a job**:
-
-   ```bash
-   darkroom job submit test-job \
-     --image docker.io/6darkroom/jh-darkroom:latest \
-     --script "echo hello && sleep 60" \
-     --cpu 1 --memory 1Gi
-   ```
-
-3. **List jobs**:
-
-   ```bash
-   darkroom job list
-   ```
-
-4. **Use storage** (S3 backend):
-
-   ```bash
-   darkroom storage ls        # list buckets
-   darkroom storage ls mybucket/  # list objects
-   ```
+A quick start is available from:
+👉 [docs/quickstart.md](docs/quickstart.md)
 
 ---
 
