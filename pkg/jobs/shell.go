@@ -75,15 +75,26 @@ func OpenShell(cfg *config.Config, jobName string) error {
 		return fmt.Errorf("failed to initialize executor: %w", err)
 	}
 
-	// Attach stdio
-	err = exec.Stream(remotecommand.StreamOptions{
+	// add a context with cancel
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Run in a goroutine to handle context cancellation
+	go func() {
+		<-ctx.Done()
+		fmt.Println("\nSession ended.")
+		os.Exit(0)
+	}()
+
+	// attach to the pod's shell
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Tty:    true,
 	})
 	if err != nil {
-		return fmt.Errorf("error executing shell: %w", err)
+		return fmt.Errorf("failed to execute command in pod: %w", err)
 	}
 
 	return nil
