@@ -1,5 +1,7 @@
 # Darkroom CLI
 
+<img src="https://github.com/eddienko/darkroom-client/blob/main/darkroom.png" width="250" title="darkroom" alt="darkroom" align="right" vspace="5" />
+
 `darkroom` is a command-line tool for interacting with the Darkroom platform.  
 It provides an easy way to **submit and manage jobs on Kubernetes clusters** and to **store, sync, and share files via S3**.
 
