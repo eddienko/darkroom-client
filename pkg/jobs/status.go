@@ -52,6 +52,8 @@ func JobStatus(cfg *config.Config, jobName string) error {
 	status := "<unknown>"
 	startTime := "<unknown>"
 	completionTime := "<unknown>"
+	message := "<unknown>"
+	logs := ""
 	if s, ok := job.Object["status"].(map[string]interface{}); ok {
 		if phase, ok := s["phase"].(string); ok {
 			status = phase
@@ -62,8 +64,15 @@ func JobStatus(cfg *config.Config, jobName string) error {
 		if ct, ok := s["completionTime"].(string); ok {
 			completionTime = ct
 		}
+		if ct, ok := s["message"].(string); ok {
+			message = ct
+		}
+		if ct, ok := s["logs"].(string); ok {
+			logs = ct
+		}
 	}
 	fmt.Println("Status:", status)
+	fmt.Println("Message:", message)
 	fmt.Println("Start Time:", startTime)
 	fmt.Println("Completion Time:", completionTime)
 
@@ -85,6 +94,8 @@ func JobStatus(cfg *config.Config, jobName string) error {
 			}
 		}
 	}
+
+	fmt.Println("Logs:\n", logs)
 
 	return nil
 }
