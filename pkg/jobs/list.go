@@ -6,6 +6,7 @@ import (
 	"darkroom/pkg/config"
 	"fmt"
 	"strings"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -44,8 +45,8 @@ func ListJobs(cfg *config.Config) error {
 		return nil
 	}
 
-	fmt.Printf("%-30s %-10s %-20s\n", "NAME", "STATUS", "SUBMITTED BY")
-	fmt.Println(strings.Repeat("-", 70))
+	fmt.Printf("%-30s %-10s %-20s %-25s %-25s\n", "NAME", "STATUS", "SUBMITTED BY", "STARTED", "COMPLETED")
+	fmt.Println(strings.Repeat("-", 109))
 	for _, job := range jobList.Items {
 		name := job.GetName()
 		submittedBy := "<unknown>"
@@ -54,14 +55,38 @@ func ListJobs(cfg *config.Config) error {
 		}
 
 		status := "<unknown>"
+		startTime := ""
+		endTime := ""
 		if spec, ok := job.Object["status"].(map[string]interface{}); ok {
 			if phase, ok := spec["phase"].(string); ok {
 				status = phase
 			}
+			if ann, ok := spec["startTime"].(string); ok {
+				startTime = formatTime(ann)
+			}
+			if ann, ok := spec["completionTime"].(string); ok {
+				endTime = formatTime(ann)
+			}
 		}
 
-		fmt.Printf("%-30s %-10s %-20s\n", name, status, submittedBy)
+		fmt.Printf("%-30s %-10s %-20s %-25s %-25s\n", name, status, submittedBy, startTime, endTime)
 	}
 
 	return nil
+}
+
+func formatTime(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	// parse ISO-like timestamp
+	layout := "2006-01-02T15:04:05.000000Z"
+	t, err := time.Parse(layout, s)
+	if err != nil {
+		return ""
+	}
+
+	// format in a readable way
+	return t.Format("02 Jan 2006 15:04:05")
 }
