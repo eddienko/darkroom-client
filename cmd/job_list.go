@@ -18,7 +18,8 @@ var jobListCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		err = jobs.ListJobs(cfg)
+		// err = jobs.ListJobs(cfg)
+		err = jobs.ListJobsViaQueryJob(cfg)
 		if err != nil {
 			return colorfmt.Error("%v", err)
 		}
