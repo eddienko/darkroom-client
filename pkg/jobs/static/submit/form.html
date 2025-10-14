@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Submit job</title>
+
+    <!-- Materialize CSS -->
+    <link href="materialize.min.css" rel="stylesheet">
+    <link href="material-icons.css" rel="stylesheet">
+
+    <style>
+      body {
+        background-color: #f5f5f5;
+        padding-top: 60px;
+      }
+      *, *:before, *:after {
+        box-sizing: inherit;
+      }
+      .container {
+        max-width: 600px;
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      }
+      .input-field {
+        margin-bottom: 1.8rem;
+      }
+      .helper-text {
+        margin-top: 0.3rem;
+        line-height: 1.2;
+      }
+      h4 {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .btn {
+        width: 100%;
+      }
+      .message {
+        margin-top: 20px;
+        display: none;
+      }
+      .button-row { display: flex; justify-content: space-between; margin-top: 20px; }
+      .error-box { display:none; margin-bottom:20px; padding:10px; border-radius:6px; background:#ffebee; color:#c62828; }
+      .field-error { color:#c62828; font-size:0.9rem; margin-top:-10px; margin-bottom:10px; display:block; }
+    </style>
+
+    <script>
+      window.setDefaults = function(defaults) {
+          for (const key in defaults) {
+              const el = document.getElementById(key);
+              if (el) el.value = defaults[key];
+          }
+          if (window.M && M.updateTextFields) M.updateTextFields();
+      };
+    </script>
+
+  </head>
+  <body>
+    <div class="container">
+      <h4>Job Submission</h4>
+
+      <div id="errorBox" class="error-box"></div>
+
+      <form id="jobForm">
+        <!-- Name -->
+        <div class="input-field">
+          <input id="name" type="text" name="name" required
+                 autocapitalize="off" autocorrect="off" spellcheck="false">
+          <label for="name">Job Name</label>
+          <span class="helper-text">A short name for the job (e.g., data-prep)</span>
+          <span class="field-error" id="err-name"></span>
+        </div>
+
+        <!-- Script -->
+        <div class="input-field">
+          <input id="script" type="text" name="script" required
+                 autocapitalize="off" autocorrect="off" spellcheck="false">
+          <label for="script">Script</label>
+          <span class="helper-text">Full path to a script in the server to run</span>
+          <span class="field-error" id="err-script"></span>
+        </div>
+
+        <!-- CPU -->
+        <div class="input-field">
+          <input id="cpu" type="number" name="cpu" min="1" max="100" value="1" required>
+          <label for="cpu">CPU (1–100)</label>
+          <span class="field-error" id="err-cpu"></span>
+        </div>
+
+        <!-- Memory -->
+        <div class="input-field">
+          <input id="memory" type="number" name="memory" min="1" max="100" value="1" required>
+          <label for="memory">Memory (Gi, 1–100)</label>
+          <span class="field-error" id="err-memory"></span>
+        </div>
+
+        <!-- Hidden for now -->
+        <input id="image" type="hidden" name="image" >
+        <input id="jobtype" type="hidden" name="jobtype" >
+        <input id="workers" type="hidden" name="workers" >
+
+
+
+        <div class="button-row">
+          <button class="btn waves-effect waves-light" type="submit">
+            <i class="material-icons left">check</i>Submit
+          </button>
+          <button class="btn grey lighten-1 black-text waves-effect" type="button" id="cancelBtn">
+            <i class="material-icons left">close</i>Cancel
+          </button>
+        </div>
+
+      </form>
+
+      <div id="message" class="message card-panel green lighten-4" />
+      
+    </div>
+
+    <!-- Materialize JS -->
+    <script src="materialize.min.js"></script>
+
+    <script>
+      // Get port from query param (passed by Go)
+      const port = new URLSearchParams(window.location.search).get("port") || "8080";
+
+      function clearErrors() {
+        document.getElementById("errorBox").style.display = "none";
+        // for (const id of ["name","script","cpu","memory"]) {
+        //  document.getElementById(`err-${id}`).textContent = "";
+        // }
+      }
+
+      function showErrors(err) {
+        const box = document.getElementById("errorBox");
+        box.innerHTML = `<b>Error:</b> ${err.error || "Unknown error"}`;
+        box.style.display = "block";
+        //if (err.fields) {
+        //  for (const [key, msg] of Object.entries(err.fields)) {
+        //    const el = document.getElementById(`err-${key}`);
+        //    if (el) el.textContent = msg;
+        //  }
+        //}
+      }
+
+      // Submit handler
+      document.getElementById("jobForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        clearErrors();
+
+        const data = {
+          name: document.getElementById("name").value,
+          script: document.getElementById("script").value,
+          cpu: parseInt(document.getElementById("cpu").value),
+          memory: parseInt(document.getElementById("memory").value),
+          image: document.getElementById("image").value,
+          jobtype: document.getElementById("jobtype").value,
+          workers: parseInt(document.getElementById("jobtype").value)
+        };
+
+        try {
+          const res = await fetch(`http://localhost:${port}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
+
+          if (res.ok) {
+            // Send message to Go
+            if (window.sendMessage) {
+              window.sendMessage(JSON.stringify({ type: "submit", data }));
+            }
+          } else {
+            const err = await res.json();
+            showErrors(err);
+          }
+        } catch (err) {
+          showErrors({ error: "Connection error: " + err.message });
+        }
+      });
+
+      function showMessage(text, color) {
+        const msgBox = document.getElementById("message");
+        msgBox.textContent = text;
+        msgBox.style.display = "block";
+        msgBox.style.backgroundColor = color === "red" ? "#ffcdd2" : "#c8e6c9";
+        msgBox.style.color = color === "red" ? "#b71c1c" : "#1b5e20";
+      }
+
+      // ✅ Called when Go reports success
+      function showSuccessScreen(title, details) {
+        const container = document.querySelector(".container");
+        container.innerHTML = `
+          <div class="center-align" style="padding: 40px;">
+            <h4>${title}</h4>
+            <p style="margin-top: 20px; font-size: 1.2em;">${details}</p>
+            <button class="btn green waves-effect waves-light" id="closeBtn">
+              <i class="material-icons left">check</i>Close
+            </button>
+          </div>
+        `;
+
+         // Hook up close button
+        document.getElementById("closeBtn").addEventListener("click", function() {
+          if (window.sendMessage) {
+            window.sendMessage(JSON.stringify({ type: "close" }));
+          }
+        });
+      }
+
+      // Cancel button
+      document.getElementById("cancelBtn").addEventListener("click", function() {
+        if (window.sendMessage) {
+          window.sendMessage(JSON.stringify({ type: "cancel" }));
+        }
+      });
+
+      window.sendMessage(JSON.stringify({ type: "onload" }));
+
+    </script>
+  </body>
+</html>

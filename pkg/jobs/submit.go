@@ -52,7 +52,7 @@ func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory, jobType,
 	if err != nil {
 		return "", fmt.Errorf("failed to get user info: %w", err)
 	}
-	fmt.Printf("Submitting job as user: %s\n", userInfo.Username)
+	fmt.Printf("Submitting job %s as user: %s\n", jobName, userInfo.Username)
 
 	// Load kubeconfig
 	namespace := "jupyter-" + userInfo.Username

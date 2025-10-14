@@ -4,6 +4,7 @@ import (
 	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/config"
 	"darkroom/pkg/jobs"
+	"darkroom/pkg/utils"
 	"errors"
 	"fmt"
 	"regexp"
@@ -22,10 +23,11 @@ var (
 	// submittedBy string
 	jobType string
 	workers string
+	gui     bool
 )
 
 // validateJobInputs checks all job parameters for correctness.
-func validateJobInputs(cfg *config.Config, jobName, cpu, memory, jobType, workers string) error {
+func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory, jobType, workers string) error {
 	var errs []string
 
 	// --- Validate job name ---
@@ -43,7 +45,7 @@ func validateJobInputs(cfg *config.Config, jobName, cpu, memory, jobType, worker
 	}
 
 	// --- Validate memory ---
-	memVal, err := parseMemory(memory)
+	memVal, err := utils.ParseMemory(memory)
 	if err != nil {
 		errs = append(errs, fmt.Sprintf("invalid memory value %q: %v", memory, err))
 	} else if memVal > cfg.ResourceLimit.MaxMemory {
@@ -72,33 +74,28 @@ func validateJobInputs(cfg *config.Config, jobName, cpu, memory, jobType, worker
 	return nil
 }
 
-// parseMemory converts values like "512Mi" or "2Gi" into MiB.
-func parseMemory(mem string) (int, error) {
-	mem = strings.TrimSpace(strings.ToLower(mem))
-	if strings.HasSuffix(mem, "gi") {
-		v, err := strconv.ParseFloat(strings.TrimSuffix(mem, "gi"), 64)
-		if err != nil {
-			return 0, err
-		}
-		return int(v * 1024), nil
-	}
-	if strings.HasSuffix(mem, "mi") {
-		v, err := strconv.ParseFloat(strings.TrimSuffix(mem, "mi"), 64)
-		if err != nil {
-			return 0, err
-		}
-		return int(v), nil
-	}
-	return 0, fmt.Errorf("unknown memory unit (must end with Mi or Gi)")
-}
-
 var jobSubmitCmd = &cobra.Command{
 	Use:   "submit",
 	Short: "Submit a UserJob to the cluster",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return validateJobInputs(cfg, jobName, cpu, memory, jobType, workers)
+		if gui {
+			return nil
+		}
+		return validateJobInputs(cfg, jobName, image, script, cpu, memory, jobType, workers)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		if gui {
+			data, err := jobs.SubmitGUI(cfg, jobName, image, script, cpu, memory, jobType, workers)
+			if err != nil {
+				return err
+			}
+			if data == nil {
+				return nil
+			}
+			return nil
+		}
+
 		name, err := jobs.SubmitJob(cfg, jobName, image, script, cpu, memory, jobType, workers)
 		if err != nil {
 			return err
@@ -111,12 +108,12 @@ var jobSubmitCmd = &cobra.Command{
 func init() {
 	jobCmd.AddCommand(jobSubmitCmd)
 
-	jobSubmitCmd.Flags().StringVar(&jobName, "name", "pi-job", "Job name")
+	jobSubmitCmd.Flags().StringVar(&jobName, "name", "", "Job name")
 	jobSubmitCmd.Flags().StringVar(&image, "image", "docker.io/6darkroom/jh-darkroom:latest", "Container image")
-	jobSubmitCmd.Flags().StringVar(&script, "script", "sleep 3600", "Script to run inside the job")
+	jobSubmitCmd.Flags().StringVar(&script, "script", "sleep 600", "Script to run inside the job")
 	jobSubmitCmd.Flags().StringVar(&cpu, "cpu", "1", "CPU request")
 	jobSubmitCmd.Flags().StringVar(&memory, "memory", "1Gi", "Memory request")
 	jobSubmitCmd.Flags().StringVar(&jobType, "type", "default", "job type (default/batch/dask)")
 	jobSubmitCmd.Flags().StringVar(&workers, "nworkers", "", "number of worker nodes (for batch/dask)")
-	// jobSubmitCmd.Flags().StringVar(&submittedBy, "submitted-by", "unknown", "Submitter username")
+	jobSubmitCmd.Flags().BoolVarP(&gui, "gui", "", false, "launch a GUI")
 }

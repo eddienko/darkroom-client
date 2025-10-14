@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.x
+
+- job submit can be invoked with a gui flag to launch a gui to collect inputs
+
+
 ## v0.2.8
 
 - Improved job support:
