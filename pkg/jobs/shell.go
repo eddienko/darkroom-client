@@ -6,6 +6,8 @@ import (
 	"darkroom/pkg/config"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+
+	"golang.org/x/term"
 )
 
 // OpenShell attaches to a job's pod and starts an interactive shell
@@ -55,6 +59,23 @@ func OpenShell(cfg *config.Config, jobName string) error {
 
 	fmt.Printf("Opening shell in pod %s, container %s\n", pod.Name, container)
 
+	// Put terminal into raw mode
+	fd := int(os.Stdin.Fd())
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		return fmt.Errorf("failed to set terminal raw mode: %w", err)
+	}
+	defer term.Restore(fd, oldState)
+
+	// Handle interrupts to restore terminal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		term.Restore(fd, oldState)
+		os.Exit(0)
+	}()
+
 	// Exec request
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -75,19 +96,8 @@ func OpenShell(cfg *config.Config, jobName string) error {
 		return fmt.Errorf("failed to initialize executor: %w", err)
 	}
 
-	// add a context with cancel
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Run in a goroutine to handle context cancellation
-	go func() {
-		<-ctx.Done()
-		fmt.Println("\nSession ended.")
-		os.Exit(0)
-	}()
-
-	// attach to the pod's shell
-	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+	// Run the interactive shell
+	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
