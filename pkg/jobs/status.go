@@ -4,11 +4,15 @@ import (
 	"context"
 	"darkroom/pkg/auth"
 	"darkroom/pkg/config"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/yaml"
 )
 
 // JobStatus prints detailed info for a single UserJob
@@ -98,4 +102,127 @@ func JobStatus(cfg *config.Config, jobName string) error {
 	fmt.Println("Logs:\n", logs)
 
 	return nil
+}
+
+func JobStatusViaQueryJob(cfg *config.Config, jobName string) error {
+	if cfg.AuthToken == "" {
+		return fmt.Errorf("not authenticated, please login first")
+	}
+
+	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
+	if err != nil {
+		return fmt.Errorf("failed to get user info: %w", err)
+	}
+	namespace := "jupyter-" + userInfo.Username
+	name := "query-" + userInfo.Username
+
+	restCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(cfg.KubeConfig))
+	if err != nil {
+		return fmt.Errorf("failed to load kubeconfig content: %w", err)
+	}
+
+	dynClient, err := dynamic.NewForConfig(restCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define the UserQueryJob CR (unstructured)
+	userJobQuery := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "edu.dev/v1",
+			"kind":       "UserJobQuery",
+			"metadata": map[string]interface{}{
+				"name":      name,
+				"namespace": namespace,
+			},
+			"spec": map[string]interface{}{
+				"username": userInfo.Username,
+				"query": map[string]interface{}{
+					"querytype": "status",
+					"jobname":   jobName,
+					"status":    "Completed",
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	_ = dynClient.Resource(userJobQueryGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+
+	// Submit to Kubernetes
+	_, err = dynClient.
+		Resource(userJobQueryGVR).
+		Namespace(namespace).
+		Create(ctx, userJobQuery, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create query job: %w", err)
+	}
+
+	// fmt.Println("Waiting for results...")
+
+	const (
+		maxAttempts = 10
+		delay       = 2 * time.Second
+	)
+
+	for i := 0; i < maxAttempts; i++ {
+		time.Sleep(delay)
+
+		res, err := dynClient.Resource(userJobQueryGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get resource: %w", err)
+		}
+
+		jobs, found, _ := unstructured.NestedSlice(res.Object, "status", "jobs")
+		if !found {
+			continue
+		}
+
+		if len(jobs) == 0 {
+			fmt.Println("no jobs found")
+			break
+		}
+
+		for _, j := range jobs {
+			job := j.(map[string]interface{})
+			fmt.Printf("name: %s-%v\n", job["name"], job["id"])
+
+			if spec, ok := job["spec"].(string); ok && spec != "" {
+				if specYAML, err := jsonToYAML(spec); err == nil {
+					fmt.Println(specYAML)
+				}
+			}
+
+			fmt.Println("status:", job["status"])
+			fmt.Println("submitted:", formatTime(job["started"].(string)))
+			fmt.Println("completed:", formatTime(job["finished"].(string)))
+
+			if logs, ok := job["logs"].(string); ok && logs != "" {
+				fmt.Println("\n", logs)
+			}
+		}
+		break
+	}
+
+	// Clean up query resource
+	_ = dynClient.Resource(userJobQueryGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	return nil
+}
+
+func jsonToYAML(jsonStr string) (string, error) {
+	var data interface{}
+
+	// Decode JSON into a generic structure
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return "", fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	// Encode as YAML
+	yamlBytes, err := yaml.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+
+	return string(yamlBytes), nil
 }
