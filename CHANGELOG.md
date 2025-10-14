@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.2.8
+
+- Improved job support:
+  - add extra information to job status and list useful for debugging
+  - job list accepts flags to filter jobs by status
+  - job shell behaves like a normal shell now
+- Support backend changes:
+  - job status and job list now use database information
+  - job submit now appends a unique job id to the job name
+  - job status returns job logs if these exist
+
+### Documentation
+
+- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.8/README.md)
+- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.8/docs/quickstart.md)
+- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.8/docs/commands.md)
+
 ## v0.2.7
 
 - Use GitHub secrets to add secure encryption and server keys
@@ -13,9 +30,9 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
-- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.6/README.md)
-- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.6/docs/quickstart.md)
-- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.6/docs/commands.md)
+- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.7/README.md)
+- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.7/docs/quickstart.md)
+- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.7/docs/commands.md)
 
 
 ## v0.2.5
