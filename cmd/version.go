@@ -29,7 +29,11 @@ func InitVersion() {
 	if Version == "dev" {
 		out, err := exec.Command("git", "describe", "--tags", "--abbrev=0").Output()
 		if err == nil {
-			Version = strings.TrimSpace(string(out)) + "-" + GitCommit[:7] + "-dev"
+			Version = strings.TrimSpace(string(out)) + "-" + GitCommit[:7]
+		}
+		branch, err := exec.Command("git", "branch", "--show-current").Output()
+		if err == nil {
+			Version = Version + "-" + strings.TrimSpace(string(branch))
 		}
 	}
 
