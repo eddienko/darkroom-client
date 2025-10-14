@@ -51,7 +51,7 @@ darkroom jobs --help
 3. Submit a job to run remotely.
 
 ```bash
-darkroom job submit --name test-job-1 --script "sleep 600"
+darkroom job submit --name test-job --script "sleep 600"
 ```
 
 The script is a command to execute. If it points to a script, the script has to exist in the remote server and have all the necessary lines to e.g. load a virtual environment if needed.
@@ -87,3 +87,19 @@ darkroom job cancel test-job-1
 ```
 
 > 💡 **Tip:** You can alias the `darkroom job` command to something different if you like, `alias darkj="darkroom job"` and then use `darkj list`
+
+### Debug jobs
+
+For debugging you can submit a job with a sleep command as in:
+
+```bash
+darkroom job submit --name test-job --script "sleep 600"
+```
+
+and connect to the pod running the job via a shell (with limited capabilities). 
+
+```bash
+darkroom job shell test-job-11
+```
+
+Exit the shell typing `exit` or `Ctrl-C`.

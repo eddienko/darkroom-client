@@ -80,7 +80,15 @@ darkroom job submit pi-job --image docker.io/6darkroom/jh-darkroom:latest --scri
 darkroom job list
 ```
 
-* Lists all jobs submitted by the current user.
+* Lists jobs submitted by the current user.
+
+* **Flags**:
+
+  * `--completed`: list only completed jobs
+  * `--running`: list only running jobs
+  * `--failed`: list only failed jobs
+  * `--pending`: list only pending jobs
+
 
 ---
 
