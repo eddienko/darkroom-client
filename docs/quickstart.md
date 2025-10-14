@@ -96,10 +96,10 @@ For debugging you can submit a job with a sleep command as in:
 darkroom job submit --name test-job --script "sleep 600"
 ```
 
-and connect to the pod running the job via a shell (with limited capabilities). 
+and connect to the pod running the job via a shell. 
 
 ```bash
 darkroom job shell test-job-11
 ```
 
-Exit the shell typing `exit` or `Ctrl-C`.
+Exit the shell typing `exit` or `Ctrl-D`.
