@@ -34,7 +34,7 @@ darkroom storage cp localfile.txt scratch.space/users/eglez/
 
 > 💡 **Tip:** You can alias the `darkroom storage` command to something different if you like, `alias darks="darkroom storage"` and then use `darks ls`
 
-## Submit jobs
+## Submitting jobs
 
 1. Authenticate. You will need your username, password and authenticator code.
 
@@ -56,13 +56,15 @@ darkroom job submit --name test-job --script "sleep 600"
 
 The script is a command to execute. If it points to a script, the script has to exist in the remote server and have all the necessary lines to e.g. load a virtual environment if needed.
 
+A unique id will be appended to the job name.
+
 4. List submitted jobs
 
 ```bash
 darkroom job list
 ```
 
-5. Retrieve a more detailed status about a job.
+5. Retrieve a more detailed status about a job including output logs.
 
 ```bash
 darkroom job status test-job-1
@@ -88,7 +90,7 @@ darkroom job cancel test-job-1
 
 > 💡 **Tip:** You can alias the `darkroom job` command to something different if you like, `alias darkj="darkroom job"` and then use `darkj list`
 
-### Debug jobs
+### Debugging jobs
 
 For debugging you can submit a job with a sleep command as in:
 
@@ -99,7 +101,7 @@ darkroom job submit --name test-job --script "sleep 600"
 and connect to the pod running the job via a shell. 
 
 ```bash
-darkroom job shell test-job-11
+darkroom job shell test-job-1
 ```
 
 Exit the shell typing `exit` or `Ctrl-D`.
