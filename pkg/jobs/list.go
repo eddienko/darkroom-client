@@ -22,7 +22,7 @@ var userJobQueryGVR = schema.GroupVersionResource{
 }
 
 // ListJobs lists all UserJobs in the user's namespace
-func ListJobs(cfg *config.Config) error {
+func ListJobs(cfg *config.Config, jobStatus string) error {
 	if cfg.AuthToken == "" {
 		return fmt.Errorf("not authenticated, please login first")
 	}
@@ -83,7 +83,7 @@ func ListJobs(cfg *config.Config) error {
 	return nil
 }
 
-func ListJobsViaQueryJob(cfg *config.Config) error {
+func ListJobsViaQueryJob(cfg *config.Config, jobStatus string) error {
 	if cfg.AuthToken == "" {
 		return fmt.Errorf("not authenticated, please login first")
 	}
@@ -118,7 +118,7 @@ func ListJobsViaQueryJob(cfg *config.Config) error {
 				"username": userInfo.Username,
 				"query": map[string]interface{}{
 					"querytype": "list",
-					"status":    "Completed",
+					"status":    jobStatus,
 				},
 			},
 		},
