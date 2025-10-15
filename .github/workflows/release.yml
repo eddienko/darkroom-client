@@ -55,12 +55,16 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
+            gui: true
           - goos: windows
             goarch: amd64
-          # - goos: darwin
-          #   goarch: amd64
+            gui: true
+          - goos: darwin
+            goarch: amd64
+            gui: false
           - goos: darwin
             goarch: arm64
+            gui: true
 
     runs-on: ${{ matrix.goos == 'windows' && 'windows-latest' || matrix.goos == 'darwin' && 'macos-latest' || 'ubuntu-22.04' }}
 
@@ -97,6 +101,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          GUI: ${{ matrix.gui }}
           DARKROOM_SECRET: ${{ secrets.DARKROOM_SECRET }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
@@ -105,7 +110,9 @@ jobs:
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
           OUT="binaries/darkroom-${GOOS}-${GOARCH}${EXT}"
           echo "🔨 Building $OUT"
-          go build -ldflags "\
+          TAGS=""
+          if [ "$GUI" = "true" ]; then TAGS="-tags gui"; fi
+          go build $TAGS -ldflags "\
             -X 'darkroom/cmd.Version=$VERSION' \
             -X 'darkroom/cmd.GitCommit=$GIT_COMMIT' \
             -X 'darkroom/cmd.BuildDate=$BUILD_DATE' \
@@ -132,10 +139,10 @@ jobs:
         with:
           name: binaries-windows-amd64
           path: ./binaries
-      # - uses: actions/download-artifact@v4
-      #   with:
-      #     name: binaries-darwin-amd64
-      #     path: ./binaries
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-darwin-amd64
+          path: ./binaries
       - uses: actions/download-artifact@v4
         with:
           name: binaries-darwin-arm64
