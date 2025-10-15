@@ -62,7 +62,7 @@ jobs:
           - goos: darwin
             goarch: arm64
 
-    runs-on: ${{ matrix.goos == 'windows' && 'windows-latest' || matrix.goos == 'darwin' && 'macos-latest' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.goos == 'windows' && 'windows-latest' || matrix.goos == 'darwin' && 'macos-latest' || 'ubuntu-22.04' }}
 
     steps:
       - name: Checkout code
