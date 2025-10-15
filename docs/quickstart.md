@@ -58,6 +58,19 @@ The script is a command to execute. If it points to a script, the script has to 
 
 A unique id will be appended to the job name.
 
+Job submissions can also be done using a basic GUI. To start it type:
+
+```bash
+darkroom job submit --gui
+```
+
+<table>
+<tr>
+<td><img src="job_submit_gui1.png" alt="Image 1" width="400"></td>
+<td><img src="job_submit_gui2.png" alt="Image 2" width="382"></td>
+</tr>
+</table>
+
 4. List submitted jobs
 
 ```bash

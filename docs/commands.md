@@ -52,24 +52,22 @@ darkroom login
 ### Submit
 
 ```bash
-darkroom job submit <jobName> --image <image> --script "<script>" --cpu <n> --memory <mem>
+darkroom job submit --name <jobName> --image <image> --script "<script>" --cpu <n> --memory <mem>
 ```
-
-* **Arguments**:
-
-  * `<jobName>`: Name of the job.
 
 * **Flags**:
 
-  * `--image` (required): Docker image for the job.
+  * `--name` (required): Name of the job.
+  * `--image` (optional): Docker image for the job.
   * `--script` (required): Command/script to run inside the job.
   * `--cpu` (default 1): Number of CPUs.
   * `--memory` (default 1Gi): Memory for the job.
+  * `--gui`: start a GUI to input job name and additional flags
 
 **Example**:
 
 ```bash
-darkroom job submit pi-job --image docker.io/6darkroom/jh-darkroom:latest --script "sleep 3600" --cpu 1 --memory 1Gi
+darkroom job submit --name pi-job --script "sleep 3600" --cpu 1 --memory 1Gi
 ```
 
 ---
