@@ -3,9 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
-## v0.x
+## v0.2.9
 
-- job submit can be invoked with a gui flag to launch a gui to collect inputs
+Small release to add GUI capabilites with `darkroom job submit --gui`
+
+
+![GUI](docs/job_submit_gui1.png "Job Submission")
 
 
 ## v0.2.8
@@ -19,11 +22,6 @@ All notable changes to this project will be documented in this file.
   - job submit now appends a unique job id to the job name
   - job status returns job logs if these exist
 
-### Documentation
-
-- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.8/README.md)
-- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.8/docs/quickstart.md)
-- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.8/docs/commands.md)
 
 ## v0.2.7
 
@@ -31,13 +29,6 @@ All notable changes to this project will be documented in this file.
 - Add validation of jobs resource requests
 - Improved job shell command
 - Improve error handling and reporting
-
-
-### Documentation
-
-- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.7/README.md)
-- [Quick start](https://github.com/eddienko/darkroom-client/blob/v0.2.7/docs/quickstart.md)
-- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.7/docs/commands.md)
 
 
 ## v0.2.5
@@ -50,12 +41,6 @@ All notable changes to this project will be documented in this file.
 
 - `darkroom config set` - add a new command to set variables directly in the configuration file.
 - `darkroom storage mb` - add a new command to create a bucket
-
-### Documentation
-
-- [README](https://github.com/eddienko/darkroom-client/blob/v0.2.5/README.md)
-- [Full command reference](https://github.com/eddienko/darkroom-client/blob/v0.2.5/docs/commands.md)
-
 
 ## v0.2.4
 
