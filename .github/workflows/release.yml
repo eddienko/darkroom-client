@@ -57,8 +57,8 @@ jobs:
             goarch: amd64
           - goos: windows
             goarch: amd64
-          - goos: darwin
-            goarch: amd64
+          # - goos: darwin
+          #   goarch: amd64
           - goos: darwin
             goarch: arm64
 
@@ -77,9 +77,13 @@ jobs:
         if: matrix.goos == 'linux'
         run: |
           sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository universe
+          sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev pkg-config
 
       - name: Prepare build info
+        shell: bash
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
           GIT_COMMIT=$(git rev-parse HEAD)
@@ -89,6 +93,7 @@ jobs:
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
 
       - name: Build binary
+        shell: bash
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
