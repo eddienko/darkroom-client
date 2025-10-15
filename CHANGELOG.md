@@ -3,12 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 
-## v0.2.14
+## v0.2.15
 
 Small release to add GUI capabilites with `darkroom job submit --gui`
-
-
-![GUI](docs/job_submit_gui1.png "Job Submission")
+on supported platforms.
 
 
 ## v0.2.8
