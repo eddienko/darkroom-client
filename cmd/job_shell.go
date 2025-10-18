@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/config"
 	"darkroom/pkg/jobs"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -18,12 +18,12 @@ var jobShellCmd = &cobra.Command{
 		// Load config
 		cfg, err := config.Load()
 		if err != nil {
-			return fmt.Errorf("failed to load config: %w", err)
+			return colorfmt.Error("failed to load config: %v", err)
 		}
 
 		// Run OpenShell
 		if err := jobs.OpenShell(cfg, jobName); err != nil {
-			return fmt.Errorf("failed to open shell: %w", err)
+			return colorfmt.Error("failed to open shell: %v", err)
 		}
 		return nil
 	},
