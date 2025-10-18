@@ -57,6 +57,23 @@ func OpenShell(cfg *config.Config, jobName string) error {
 	pod := pods.Items[0]
 	container := pod.Spec.Containers[0].Name
 
+	// check that the pod is in running state
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("pod %s is not running (phase=%s)", pod.Name, pod.Status.Phase)
+	}
+
+	// ensure the target container is ready
+	containerReady := false
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.Name == container {
+			containerReady = cs.Ready
+			break
+		}
+	}
+	if !containerReady {
+		return fmt.Errorf("container %s in pod %s is not ready", container, pod.Name)
+	}
+
 	fmt.Printf("Opening shell in pod %s, container %s\n", pod.Name, container)
 
 	// Put terminal into raw mode
