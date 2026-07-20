@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.2.16
+
+- Reverted GUI capabilities as it moves to a different package.
+- Add flag to request GPU.
+- Add refresh token to login.
+
+
 ## v0.2.15
 
 Small release to add GUI capabilites with `darkroom job submit --gui`
