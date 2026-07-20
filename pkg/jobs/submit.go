@@ -36,10 +36,10 @@ func isImageAllowed(image string) bool {
 }
 
 // SubmitJob creates a UserJob custom resource in Kubernetes
-func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory, jobType, workers string) (string, error) {
+func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
 	// Ensure user is authenticated
-	if cfg.AuthToken == "" {
-		return "", fmt.Errorf("not authenticated, please login first")
+	if err := auth.EnsureAccessToken(cfg); err != nil {
+		return "", fmt.Errorf("user not authenticated: %w", err)
 	}
 
 	// Validate image against whitelist
@@ -89,6 +89,7 @@ func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory, jobType,
 					"resources": map[string]interface{}{
 						"cpu":    cpu,
 						"memory": memory,
+						"gpu":    gpu,
 					},
 				},
 			},

@@ -3,11 +3,11 @@ module darkroom
 go 1.24.3
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.10.1
-	github.com/webview/webview_go v0.0.0-20240831120633-6173450d4dd6
 	golang.org/x/term v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.34.1

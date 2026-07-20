@@ -8,9 +8,21 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+	"bytes"
 
 	"github.com/howeyc/gopass"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+type refreshRequest struct {
+	Refresh string `json:"refresh"`
+}
+
+type refreshResponse struct {
+	Access  string `json:"access"`
+	Refresh string `json:"refresh,omitempty"`
+}
 
 func Login(cfg *config.Config, username string, password []byte) error {
 	// TODO: Call real auth service
@@ -35,6 +47,7 @@ func Login(cfg *config.Config, username string, password []byte) error {
 	}
 
 	cfg.AuthToken = loginResponse.AccessToken
+	cfg.RefreshToken = loginResponse.RefreshToken
 
 	// Fetch additional credentials and user info
 	kubeconfigContent, err := netutil.FetchKubeconfig(cfg)
@@ -164,6 +177,100 @@ func GetUserInfo(token string) (UserInfo, error) {
 	}
 
 	return userInfo, nil
+}
+
+// TokenNeedsRefresh returns true if the access token expires within the
+// next minute.
+func TokenNeedsRefresh(tokenString string) (bool, error) {
+	if tokenString == "" {
+		return true, fmt.Errorf("empty access token")
+	}
+
+	claims := jwt.MapClaims{}
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	_, _, err := parser.ParseUnverified(tokenString, claims)
+	if err != nil {
+		return true, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	exp, err := claims.GetExpirationTime()
+	if err != nil {
+		return true, fmt.Errorf("token does not contain a valid expiration")
+	}
+
+	// Refresh if the token expires within the next minute.
+	return time.Until(exp.Time) < time.Minute, nil
+}
+
+func EnsureAccessToken(cfg *config.Config) error {
+	if cfg.AuthToken == "" {
+		return fmt.Errorf("not authenticated")
+	}
+
+	needsRefresh, err := TokenNeedsRefresh(cfg.AuthToken)
+	if err != nil {
+		return fmt.Errorf("error checking token status: %w", err)
+	}
+
+	if !needsRefresh {
+		//fmt.Println("Using existing authentication token.")
+		return nil
+	}
+
+	// fmt.Println("Access token is expired or about to expire. Refreshing...")
+
+	if err := RefreshAccessToken(cfg); err != nil {
+		return fmt.Errorf("failed to refresh access token: %w", err)
+	}
+
+	// fmt.Printf("Access token refreshed successfully.\n")
+
+	return nil
+}
+
+func RefreshAccessToken(cfg *config.Config) error {
+	reqBody := refreshRequest{
+		Refresh: cfg.RefreshToken,
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal refresh request: %w", err)
+	}
+
+	resp, err := http.Post(
+		config.RefreshURL,
+		"application/json",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to contact authentication server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("token refresh failed (status %d)", resp.StatusCode)
+	}
+
+	var token refreshResponse
+	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
+		return fmt.Errorf("failed to decode refresh response: %w", err)
+	}
+
+	cfg.AuthToken = token.Access
+
+	// SimpleJWT only returns a refresh token if rotation is enabled.
+	if token.Refresh != "" {
+		cfg.RefreshToken = token.Refresh
+	}
+
+	// if err := config.Save(cfg); err != nil {
+	// 	return fmt.Errorf("failed to save updated credentials: %w", err)
+	// }
+
+	return nil
 }
 
 func exitWithError(msg string, err error) {

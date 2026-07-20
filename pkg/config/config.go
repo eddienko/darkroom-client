@@ -22,6 +22,7 @@ var DarkroomSecret = "a931ace429e10686a1ff9a5636fe584dc5662c3ea270fca263e54e93d0
 var (
 	BaseURL        = getBaseURL()
 	LoginURL       = BaseURL + "/api/v1/accounts/token/"
+	RefreshURL     = BaseURL + "/api/v1/accounts/token/refresh/"
 	ValidateOTPURL = BaseURL + "/api/v1/accounts/otp/validate/"
 	AboutMeURL     = BaseURL + "/api/v1/accounts/me/"
 	StudyURL       = BaseURL + "/api/v1/archive/study/"
@@ -48,6 +49,7 @@ type Config struct {
 	APIEndpoint   string         `yaml:"apiEndpoint"`
 	KubeConfig    string         `yaml:"kubeConfig"`
 	AuthToken     string         `yaml:"authToken"`
+	RefreshToken  string         `yaml:"refreshToken"`
 	S3AccessUser  string         `yaml:"s3AccessUser"`
 	S3AccessToken string         `yaml:"s3AccessToken"`
 	UserName      string         `yaml:"username"`

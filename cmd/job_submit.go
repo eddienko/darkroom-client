@@ -20,13 +20,14 @@ var (
 	script  string
 	cpu     string
 	memory  string
+    gpu     int
 	// submittedBy string
 	jobType string
 	workers string
 )
 
 // validateJobInputs checks all job parameters for correctness.
-func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory, jobType, workers string) error {
+func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) error {
 	var errs []string
 
 	// --- Validate job name ---
@@ -50,6 +51,21 @@ func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory, 
 	} else if memVal > cfg.ResourceLimit.MaxMemory {
 		errs = append(errs, fmt.Sprintf("requested memory %dMi exceeds the limit of %dMi", memVal, cfg.ResourceLimit.MaxMemory))
 	}
+
+    // --- Validate GPU ---
+	if gpu < 0 {
+		errs = append(errs, fmt.Sprintf("invalid GPU value %d: must be a non-negative integer", gpu))
+	}
+
+	// Optional limit check
+	// else if gpuVal > cfg.ResourceLimit.MaxGPU {
+	//     errs = append(errs, fmt.Sprintf(
+	//         "requested GPUs %d exceeds the limit of %d",
+	//         gpuVal,
+	//         cfg.ResourceLimit.MaxGPU,
+	//     ))
+	// }
+
 
 	// --- Validate job type ---
 	validTypes := map[string]bool{"default": true, "batch": true, "dask": true}
@@ -112,6 +128,7 @@ func init() {
 	jobSubmitCmd.Flags().StringVar(&script, "script", "sleep 600", "Script to run inside the job")
 	jobSubmitCmd.Flags().StringVar(&cpu, "cpu", "1", "CPU request")
 	jobSubmitCmd.Flags().StringVar(&memory, "memory", "1Gi", "Memory request")
+	jobSubmitCmd.Flags().IntVar(&gpu, "gpu", 0, "Number of GPUs to request")
 	jobSubmitCmd.Flags().StringVar(&jobType, "type", "default", "job type (default/batch/dask)")
 	jobSubmitCmd.Flags().StringVar(&workers, "nworkers", "", "number of worker nodes (for batch/dask)")
 	// jobSubmitCmd.Flags().BoolVarP(&gui, "gui", "", false, "launch a GUI")

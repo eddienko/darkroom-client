@@ -21,7 +21,7 @@ var configShowCmd = &cobra.Command{
 
 		// Make a copy with sensitive fields redacted
 		redacted := *cfg
-		redacted.KubeConfig = "<redacted>"
+		// redacted.KubeConfig = "<redacted>"
 		redacted.S3AccessToken = "<redacted>"
 		redacted.AuthToken = "<redacted>"
 

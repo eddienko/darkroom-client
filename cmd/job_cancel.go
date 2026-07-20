@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"darkroom/pkg/colorfmt"
 	"darkroom/pkg/config"
 	"darkroom/pkg/jobs"
 
@@ -14,9 +15,13 @@ var jobCancelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
-			return err
+			return colorfmt.Error("%v", err)
 		}
-		return jobs.CancelJob(cfg, args[0])
+		err = jobs.CancelJob(cfg, args[0])
+		if err != nil {
+			return colorfmt.Error("%v", err)
+		}
+		return nil
 	},
 }
 

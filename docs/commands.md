@@ -62,7 +62,7 @@ darkroom job submit --name <jobName> --image <image> --script "<script>" --cpu <
   * `--script` (required): Command/script to run inside the job.
   * `--cpu` (default 1): Number of CPUs.
   * `--memory` (default 1Gi): Memory for the job.
-  * `--gui`: start a GUI to input job name and additional flags
+  * `--gpu` (default 0): Number of GPUs to use (ony in user job mode)
 
 **Example**:
 

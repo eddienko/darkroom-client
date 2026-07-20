@@ -41,7 +41,7 @@ var jobListCmd = &cobra.Command{
 		case running:
 			status = "running"
 		default:
-			status = "" // or "all" if you want a default
+			status = "active" // or "all" if you want a default
 		}
 
 		cfg, err := config.Load()
