@@ -55,16 +55,12 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            gui: true
           - goos: windows
             goarch: amd64
-            gui: true
           - goos: darwin
             goarch: amd64
-            gui: false
           - goos: darwin
             goarch: arm64
-            gui: true
 
     runs-on: ${{ matrix.goos == 'windows' && 'windows-latest' || matrix.goos == 'darwin' && 'macos-latest' || 'ubuntu-22.04' }}
 
@@ -101,7 +97,6 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          GUI: ${{ matrix.gui }}
           DARKROOM_SECRET: ${{ secrets.DARKROOM_SECRET }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
@@ -111,7 +106,6 @@ jobs:
           OUT="binaries/darkroom-${GOOS}-${GOARCH}${EXT}"
           echo "🔨 Building $OUT"
           TAGS=""
-          if [ "$GUI" = "true" ]; then TAGS="-tags gui"; fi
           go build $TAGS -ldflags "\
             -X 'darkroom/cmd.Version=$VERSION' \
             -X 'darkroom/cmd.GitCommit=$GIT_COMMIT' \

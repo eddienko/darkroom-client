@@ -23,7 +23,6 @@ var (
 	// submittedBy string
 	jobType string
 	workers string
-	gui     bool
 )
 
 // validateJobInputs checks all job parameters for correctness.
@@ -78,25 +77,25 @@ var jobSubmitCmd = &cobra.Command{
 	Use:   "submit",
 	Short: "Submit a UserJob to the cluster",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if gui {
-			return nil
-		}
-		return validateJobInputs(cfg, jobName, image, script, cpu, memory, jobType, workers)
+		// if gui {
+		// 	return nil
+		// }
+		return validateJobInputs(cfg, jobName, image, script, cpu, memory, gpu, jobType, workers)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		if gui {
-			data, err := jobs.SubmitGUI(cfg, jobName, image, script, cpu, memory, jobType, workers)
-			if err != nil {
-				return err
-			}
-			if data == nil {
-				return nil
-			}
-			return nil
-		}
+		// if gui {
+		// 	data, err := jobs.SubmitGUI(cfg, jobName, image, script, cpu, memory, gpu, jobType, workers)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	if data == nil {
+		// 		return nil
+		// 	}
+		// 	return nil
+		// }
 
-		name, err := jobs.SubmitJob(cfg, jobName, image, script, cpu, memory, jobType, workers)
+		name, err := jobs.SubmitJob(cfg, jobName, image, script, cpu, memory, gpu, jobType, workers)
 		if err != nil {
 			return err
 		}
@@ -115,5 +114,5 @@ func init() {
 	jobSubmitCmd.Flags().StringVar(&memory, "memory", "1Gi", "Memory request")
 	jobSubmitCmd.Flags().StringVar(&jobType, "type", "default", "job type (default/batch/dask)")
 	jobSubmitCmd.Flags().StringVar(&workers, "nworkers", "", "number of worker nodes (for batch/dask)")
-	jobSubmitCmd.Flags().BoolVarP(&gui, "gui", "", false, "launch a GUI")
+	// jobSubmitCmd.Flags().BoolVarP(&gui, "gui", "", false, "launch a GUI")
 }
