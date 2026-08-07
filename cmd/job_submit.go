@@ -20,7 +20,7 @@ var (
 	script  string
 	cpu     string
 	memory  string
-    gpu     int
+	gpu     int
 	// submittedBy string
 	jobType string
 	workers string
@@ -52,7 +52,7 @@ func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory s
 		errs = append(errs, fmt.Sprintf("requested memory %dMi exceeds the limit of %dMi", memVal, cfg.ResourceLimit.MaxMemory))
 	}
 
-    // --- Validate GPU ---
+	// --- Validate GPU ---
 	if gpu < 0 {
 		errs = append(errs, fmt.Sprintf("invalid GPU value %d: must be a non-negative integer", gpu))
 	}
@@ -65,7 +65,6 @@ func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory s
 	//         cfg.ResourceLimit.MaxGPU,
 	//     ))
 	// }
-
 
 	// --- Validate job type ---
 	validTypes := map[string]bool{"default": true, "batch": true, "dask": true}

@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"darkroom/pkg/api"
 	"darkroom/pkg/auth"
 	"darkroom/pkg/config"
 	"fmt"
@@ -26,6 +27,22 @@ var allowedImages = []string{
 	// add more as needed
 }
 
+type SubmitJobRequest struct {
+	Name    string `json:"name"`
+	Image   string `json:"image"`
+	Script  string `json:"script"`
+	CPU     string `json:"cpu"`
+	Memory  string `json:"memory"`
+	GPU     int    `json:"gpu"`
+	Type    string `json:"type"`
+	Workers string `json:"workers,omitempty"`
+}
+
+type SubmitJobResponse struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 func isImageAllowed(image string) bool {
 	for _, allowed := range allowedImages {
 		if image == allowed {
@@ -36,7 +53,7 @@ func isImageAllowed(image string) bool {
 }
 
 // SubmitJob creates a UserJob custom resource in Kubernetes
-func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
+func SubmitJob2(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
 	// Ensure user is authenticated
 	if err := auth.EnsureAccessToken(cfg); err != nil {
 		return "", fmt.Errorf("user not authenticated: %w", err)
@@ -136,4 +153,31 @@ func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, g
 	}
 
 	return created.GetName(), nil
+}
+
+// SubmitJob creates a UserJob custom resource in Kubernetes
+func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
+	client := api.NewClient(cfg)
+
+	req := SubmitJobRequest{
+		Name:    jobName,
+		Image:   image,
+		Script:  script,
+		CPU:     cpu,
+		Memory:  memory,
+		GPU:     gpu,
+		Type:    jobType,
+		Workers: workers,
+	}
+
+	var resp SubmitJobResponse
+
+	err := client.Post(config.JobSubmitURL, req, &resp)
+
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Name, nil
+
 }

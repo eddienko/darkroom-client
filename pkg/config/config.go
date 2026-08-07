@@ -29,6 +29,7 @@ var (
 	ProjectURL     = BaseURL + "/api/v1/archive/project/"
 	DatasetURL     = BaseURL + "/api/v1/archive/dataset/"
 	KubeConfigURL  = BaseURL + "/api/v1/accounts/kubeconfig/"
+	JobSubmitURL   = BaseURL + "/api/v1/jobs/"
 	Debug          = &debug
 )
 
