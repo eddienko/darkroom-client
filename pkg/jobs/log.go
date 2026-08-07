@@ -16,8 +16,9 @@ import (
 
 // JobLog fetches logs from the Pod(s) of a UserJob
 func JobLog(cfg *config.Config, jobName string, follow bool, tail int64) error {
-	if cfg.AuthToken == "" {
-		return fmt.Errorf("not authenticated, please login first")
+	// Ensure user is authenticated
+	if err := auth.EnsureAccessToken(cfg); err != nil {
+		return fmt.Errorf("user not authenticated: %w", err)
 	}
 
 	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
