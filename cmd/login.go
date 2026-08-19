@@ -29,10 +29,10 @@ var loginCmd = &cobra.Command{
 	Short: "Authenticate with external service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		if err := auth.EnsureAccessToken(cfg); err == nil {
-			fmt.Println("Already logged in.")
-			return nil
-		}
+		// if err := auth.EnsureAccessToken(cfg); err == nil {
+		// 	fmt.Println("Already logged in.")
+		// 	return nil
+		// }
 
 		username := promptInput("Username: ")
 		password := promptPassword("Password: ")

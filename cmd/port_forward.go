@@ -34,8 +34,9 @@ var portForwardCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		if cfg.AuthToken == "" {
-			return fmt.Errorf("not authenticated, please login first")
+		// Ensure user is authenticated
+		if err := auth.EnsureAccessToken(cfg); err != nil {
+			return fmt.Errorf("user not authenticated: %w", err)
 		}
 
 		userInfo, err := auth.GetUserInfo(cfg.AuthToken)
