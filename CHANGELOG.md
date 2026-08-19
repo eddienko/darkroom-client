@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## v0.2.17
+
+- Fix issues around refresh token.
+
+
 ## v0.2.16
 
 - Reverted GUI capabilities as it moves to a different package.
