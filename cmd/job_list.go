@@ -9,39 +9,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	completed bool
-	failed    bool
-	pending   bool
-	running   bool
-)
+var jobStatus string
+
+var validJobStatuses = map[string]bool{
+	"pending":   true,
+	"running":   true,
+	"completed": true,
+	"failed":    true,
+	"cancelled": true,
+}
 
 var jobListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all submitted UserJobs",
+	Short: "List submitted jobs",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		selected := 0
-		for _, f := range []bool{completed, failed, pending, running} {
-			if f {
-				selected++
-			}
-		}
-		if selected > 1 {
-			return fmt.Errorf("only one of --completed, --failed, --running or --pending can be used at a time")
-		}
-
-		var status string
-		switch {
-		case completed:
-			status = "completed"
-		case failed:
-			status = "failed"
-		case pending:
-			status = "pending"
-		case running:
-			status = "running"
-		default:
-			status = "active" // or "all" if you want a default
+		if jobStatus != "" && !validJobStatuses[jobStatus] {
+			return fmt.Errorf(
+				"invalid status %q: must be one of pending, running, completed, failed, cancelled",
+				jobStatus,
+			)
 		}
 
 		cfg, err := config.Load()
@@ -49,12 +35,13 @@ var jobListCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		// err = jobs.ListJobs(cfg)
-
-		err = jobs.ListJobsViaQueryJob(cfg, status)
+		resp, err := jobs.ListJobs(cfg, jobStatus)
 		if err != nil {
 			return colorfmt.Error("%v", err)
 		}
+
+		jobs.PrintJobs(resp)
+
 		return nil
 	},
 }
@@ -62,9 +49,10 @@ var jobListCmd = &cobra.Command{
 func init() {
 	jobCmd.AddCommand(jobListCmd)
 
-	jobListCmd.Flags().BoolVarP(&completed, "completed", "c", false, "show completed jobs")
-	jobListCmd.Flags().BoolVarP(&failed, "failed", "f", false, "show failed jobs")
-	jobListCmd.Flags().BoolVarP(&pending, "pending", "p", false, "show pending jobs")
-	jobListCmd.Flags().BoolVarP(&running, "running", "r", false, "show running jobs")
-
+	jobListCmd.Flags().StringVar(
+		&jobStatus,
+		"status",
+		"",
+		"filter jobs by status (pending, running, completed, failed, cancelled)",
+	)
 }

@@ -1,215 +1,81 @@
 package jobs
 
 import (
-	"context"
-	"darkroom/pkg/auth"
+	"darkroom/pkg/api"
 	"darkroom/pkg/config"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 )
 
-// JobStatus prints detailed info for a single UserJob
-func JobStatus(cfg *config.Config, jobName string) error {
-	// Ensure user is authenticated
-	if err := auth.EnsureAccessToken(cfg); err != nil {
-		return fmt.Errorf("user not authenticated: %w", err)
-	}
-
-	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
-	if err != nil {
-		return fmt.Errorf("failed to get user info: %w", err)
-	}
-	namespace := "jupyter-" + userInfo.Username
-
-	restCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(cfg.KubeConfig))
-	if err != nil {
-		return fmt.Errorf("failed to load kubeconfig content: %w", err)
-	}
-
-	dynClient, err := dynamic.NewForConfig(restCfg)
-	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
-	job, err := dynClient.Resource(userJobGVR).Namespace(namespace).Get(context.TODO(), jobName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get UserJob %s: %w", jobName, err)
-	}
-
-	fmt.Println("Job Name:", job.GetName())
-	fmt.Println("Namespace:", namespace)
-
-	// Submitted by annotation
-	submittedBy := "<unknown>"
-	if ann, ok := job.GetAnnotations()["submitted-by"]; ok {
-		submittedBy = ann
-	}
-	fmt.Println("Submitted by:", submittedBy)
-
-	// Status
-	status := "<unknown>"
-	startTime := "<unknown>"
-	completionTime := "<unknown>"
-	message := "<unknown>"
-	logs := ""
-	if s, ok := job.Object["status"].(map[string]interface{}); ok {
-		if phase, ok := s["phase"].(string); ok {
-			status = phase
-		}
-		if st, ok := s["startTime"].(string); ok {
-			startTime = st
-		}
-		if ct, ok := s["completionTime"].(string); ok {
-			completionTime = ct
-		}
-		if ct, ok := s["message"].(string); ok {
-			message = ct
-		}
-		if ct, ok := s["logs"].(string); ok {
-			logs = ct
-		}
-	}
-	fmt.Println("Status:", status)
-	fmt.Println("Message:", message)
-	fmt.Println("Start Time:", startTime)
-	fmt.Println("Completion Time:", completionTime)
-
-	// Spec info
-	if spec, ok := job.Object["spec"].(map[string]interface{}); ok {
-		if script, ok := spec["script"].(string); ok {
-			fmt.Println("Script:", script)
-		}
-		if image, ok := spec["image"].(string); ok {
-			fmt.Println("Image:", image)
-		}
-		if resources, ok := spec["resources"].(map[string]interface{}); ok {
-			fmt.Println("Resources:")
-			if cpu, ok := resources["cpu"].(string); ok {
-				fmt.Println("  CPU:", cpu)
-			}
-			if mem, ok := resources["memory"].(string); ok {
-				fmt.Println("  Memory:", mem)
-			}
-		}
-	}
-
-	fmt.Println("Logs:\n", logs)
-
-	return nil
+type JobDetail struct {
+	ID             int        `json:"id"`
+	Name           string     `json:"name"`
+	Status         string     `json:"status"`
+	Message        string     `json:"message"`
+	Image          string     `json:"image"`
+	Command        []string   `json:"command"`
+	Args           []string   `json:"args"`
+	CPU            string     `json:"cpu"`
+	Memory         string     `json:"memory"`
+	GPU            int        `json:"gpu"`
+	JobType        string     `json:"job_type"`
+	Workers        int        `json:"workers"`
+	StartTime      *time.Time `json:"start_time"`
+	CompletionTime *time.Time `json:"completion_time"`
 }
 
-func JobStatusViaQueryJob(cfg *config.Config, jobName string) error {
-	// Ensure user is authenticated
-	if err := auth.EnsureAccessToken(cfg); err != nil {
-		return fmt.Errorf("user not authenticated: %w", err)
+func GetJob(cfg *config.Config, jobID int) (*Job, error) {
+	client := api.NewClient(cfg)
+
+	endpoint := fmt.Sprintf(config.JobDetailURL, jobID)
+
+	var job Job
+
+	if err := client.Get(endpoint, &job); err != nil {
+		return nil, fmt.Errorf("failed to get job %d: %w", jobID, err)
 	}
 
-	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
-	if err != nil {
-		return fmt.Errorf("failed to get user info: %w", err)
-	}
-	namespace := "jupyter-" + userInfo.Username
-	name := "query-" + userInfo.Username
+	return &job, nil
+}
 
-	restCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(cfg.KubeConfig))
-	if err != nil {
-		return fmt.Errorf("failed to load kubeconfig content: %w", err)
-	}
+func PrintJobStatus(job *Job) {
+	fmt.Printf("ID:           %d\n", job.ID)
+	fmt.Printf("Name:         %s\n", job.Name)
+	fmt.Printf("Status:       %s\n", job.Status)
+	fmt.Printf("Message:      %s\n", job.Message)
+	fmt.Printf("Image:        %s\n", job.Image)
 
-	dynClient, err := dynamic.NewForConfig(restCfg)
-	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+	if len(job.Command) > 0 {
+		fmt.Printf("Command:      %s\n", strings.Join(job.Command, " "))
 	}
 
-	// Define the UserQueryJob CR (unstructured)
-	userJobQuery := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "edu.dev/v1",
-			"kind":       "UserJobQuery",
-			"metadata": map[string]interface{}{
-				"name":      name,
-				"namespace": namespace,
-			},
-			"spec": map[string]interface{}{
-				"username": userInfo.Username,
-				"query": map[string]interface{}{
-					"querytype": "status",
-					"jobname":   jobName,
-					"status":    "Completed",
-				},
-			},
-		},
+	if len(job.Args) > 0 {
+		fmt.Printf("Args:         %s\n", strings.Join(job.Args, " "))
 	}
 
-	ctx := context.Background()
+	fmt.Printf("CPU:          %s\n", job.CPU)
+	fmt.Printf("Memory:       %s\n", job.Memory)
+	fmt.Printf("GPU:          %d\n", job.GPU)
+	fmt.Printf("Type:          %s\n", job.JobType)
+	fmt.Printf("Workers:      %d\n", job.Workers)
 
-	_ = dynClient.Resource(userJobQueryGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-
-	// Submit to Kubernetes
-	_, err = dynClient.
-		Resource(userJobQueryGVR).
-		Namespace(namespace).
-		Create(ctx, userJobQuery, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to create query job: %w", err)
+	if job.StartTime != nil {
+		fmt.Printf(
+			"Start time:   %s\n",
+			job.StartTime.Local().Format("2006-01-02 15:04:05"),
+		)
 	}
 
-	// fmt.Println("Waiting for results...")
-
-	const (
-		maxAttempts = 10
-		delay       = 2 * time.Second
-	)
-
-	for i := 0; i < maxAttempts; i++ {
-		time.Sleep(delay)
-
-		res, err := dynClient.Resource(userJobQueryGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to get resource: %w", err)
-		}
-
-		jobs, found, _ := unstructured.NestedSlice(res.Object, "status", "jobs")
-		if !found {
-			continue
-		}
-
-		if len(jobs) == 0 {
-			fmt.Println("no jobs found")
-			break
-		}
-
-		for _, j := range jobs {
-			job := j.(map[string]interface{})
-			fmt.Printf("name: %s-%v\n", job["name"], job["id"])
-
-			if spec, ok := job["spec"].(string); ok && spec != "" {
-				if specYAML, err := jsonToYAML(spec); err == nil {
-					fmt.Println(specYAML)
-				}
-			}
-
-			fmt.Println("status:", job["status"])
-			fmt.Println("submitted:", formatTime(job["started"].(string)))
-			fmt.Println("completed:", formatTime(job["finished"].(string)))
-
-			if logs, ok := job["logs"].(string); ok && logs != "" {
-				fmt.Println("\n", logs)
-			}
-		}
-		break
+	if job.CompletionTime != nil {
+		fmt.Printf(
+			"Completion:   %s\n",
+			job.CompletionTime.Local().Format("2006-01-02 15:04:05"),
+		)
 	}
-
-	// Clean up query resource
-	_ = dynClient.Resource(userJobQueryGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	return nil
 }
 
 func jsonToYAML(jsonStr string) (string, error) {

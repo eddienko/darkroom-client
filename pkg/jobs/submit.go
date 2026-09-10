@@ -1,25 +1,12 @@
 package jobs
 
 import (
-	"context"
 	"darkroom/pkg/api"
-	"darkroom/pkg/auth"
 	"darkroom/pkg/config"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
+	"github.com/mattn/go-shellwords"
 )
-
-// Hardcoded Group/Version/Resource for UserJob CRD
-var userJobGVR = schema.GroupVersionResource{
-	Group:    "edu.dev",
-	Version:  "v1",
-	Resource: "userjobs",
-}
 
 // Whitelisted Docker images
 var allowedImages = []string{
@@ -28,14 +15,15 @@ var allowedImages = []string{
 }
 
 type SubmitJobRequest struct {
-	Name    string `json:"name"`
-	Image   string `json:"image"`
-	Script  string `json:"script"`
-	CPU     string `json:"cpu"`
-	Memory  string `json:"memory"`
-	GPU     int    `json:"gpu"`
-	Type    string `json:"type"`
-	Workers string `json:"workers,omitempty"`
+	Name    string   `json:"name"`
+	Image   string   `json:"image"`
+	Command []string `json:"command"`
+	Args    []string `json:"args"`
+	CPU     string   `json:"cpu"`
+	Memory  string   `json:"memory"`
+	GPU     int      `json:"gpu"`
+	JobType string   `json:"job_type"`
+	Workers string   `json:"workers,omitempty"`
 }
 
 type SubmitJobResponse struct {
@@ -53,120 +41,38 @@ func isImageAllowed(image string) bool {
 }
 
 // SubmitJob creates a UserJob custom resource in Kubernetes
-func SubmitJob2(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
-	// Ensure user is authenticated
-	if err := auth.EnsureAccessToken(cfg); err != nil {
-		return "", fmt.Errorf("user not authenticated: %w", err)
-	}
-
-	// Validate image against whitelist
-	if !isImageAllowed(image) {
-		return "", fmt.Errorf("image %q is not in the whitelist of allowed images", image)
-	}
-
-	// Get user info
-	userInfo, err := auth.GetUserInfo(cfg.AuthToken)
-	if err != nil {
-		return "", fmt.Errorf("failed to get user info: %w", err)
-	}
-	fmt.Printf("Submitting job %s as user: %s\n", jobName, userInfo.Username)
-
-	// Load kubeconfig
-	namespace := "jupyter-" + userInfo.Username
-
-	restCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(cfg.KubeConfig))
-	if err != nil {
-		return "", fmt.Errorf("failed to load kubeconfig content: %w", err)
-	}
-
-	// Create dynamic client
-	dynClient, err := dynamic.NewForConfig(restCfg)
-	if err != nil {
-		return "", fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
-	// Build unstructured object representing the CR
-	var userJob *unstructured.Unstructured
-	switch jobType {
-	case "default":
-		userJob = &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("%s/%s", userJobGVR.Group, userJobGVR.Version),
-				"kind":       "UserJob",
-				"metadata": map[string]interface{}{
-					"name":      jobName,
-					"namespace": namespace,
-					"annotations": map[string]interface{}{
-						"submitted-by": userInfo.Username,
-					},
-				},
-				"spec": map[string]interface{}{
-					"image":  image,
-					"script": script,
-					"resources": map[string]interface{}{
-						"cpu":    cpu,
-						"memory": memory,
-						"gpu":    gpu,
-					},
-				},
-			},
-		}
-	case "batch":
-	case "dask":
-		userJob = &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("%s/%s", userJobGVR.Group, userJobGVR.Version),
-				"kind":       "UserDaskJob",
-				"metadata": map[string]interface{}{
-					"name":      jobName,
-					"namespace": namespace,
-					"annotations": map[string]interface{}{
-						"submitted-by": userInfo.Username,
-					},
-				},
-				"spec": map[string]interface{}{
-					"image":  image,
-					"script": script,
-					"scheduler": map[string]interface{}{
-						"cpu":    "4",
-						"memory": "8GB",
-					},
-					"worker": map[string]interface{}{
-						"cpu":      cpu,
-						"memory":   memory,
-						"replicas": workers,
-					},
-				},
-			},
-		}
-	default:
-		return "", fmt.Errorf("unknown job type: %s", jobType)
-	}
-
-	// Submit to Kubernetes
-	created, err := dynClient.
-		Resource(userJobGVR).
-		Namespace(namespace).
-		Create(context.TODO(), userJob, metav1.CreateOptions{})
-	if err != nil {
-		return "", fmt.Errorf("failed to create UserJob: %w", err)
-	}
-
-	return created.GetName(), nil
-}
-
-// SubmitJob creates a UserJob custom resource in Kubernetes
-func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) (string, error) {
+func SubmitJob(cfg *config.Config, jobName, image, script string, command, commandArgs []string, cpu, memory string, gpu int, jobType, workers string) (SubmitJobResponse, error) {
 	client := api.NewClient(cfg)
+
+	var parsedCommand []string
+	var parsedArgs []string
+
+	if script == "" && len(command) == 0 {
+		return SubmitJobResponse{}, fmt.Errorf("either script or command must be provided")
+	}
+
+	if script == "" {
+		parsedCommand = command
+		parsedArgs = commandArgs
+	} else {
+		parsedCommand, _ = shellwords.Parse("/usr/local/bin/entrypoint.sh")
+		parsedArgs, _ = shellwords.Parse(script)
+
+		if !isImageAllowed(image) {
+			return SubmitJobResponse{}, fmt.Errorf("image %q is not in the whitelist of allowed images", image)
+		}
+
+	}
 
 	req := SubmitJobRequest{
 		Name:    jobName,
 		Image:   image,
-		Script:  script,
+		Command: parsedCommand,
+		Args:    parsedArgs,
 		CPU:     cpu,
 		Memory:  memory,
 		GPU:     gpu,
-		Type:    jobType,
+		JobType: jobType,
 		Workers: workers,
 	}
 
@@ -175,9 +81,9 @@ func SubmitJob(cfg *config.Config, jobName, image, script, cpu, memory string, g
 	err := client.Post(config.JobSubmitURL, req, &resp)
 
 	if err != nil {
-		return "", err
+		return SubmitJobResponse{}, err
 	}
 
-	return resp.Name, nil
+	return resp, nil
 
 }

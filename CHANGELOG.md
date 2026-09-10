@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Now it is possible to submit jobs using a yaml file as in
+  `darkroom job submit job.yaml`
+- Use Django API for all job related tasks rather than K8s access.
 
 ## v0.2.17
 
