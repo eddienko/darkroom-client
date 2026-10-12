@@ -15,19 +15,20 @@ import (
 )
 
 var (
-	jobName string
-	image   string
-	script  string
-	cpu     string
-	memory  string
-    gpu     int
+	jobName    string
+	image      string
+	script     string
+	cpu        string
+	memory     string
+	gpu        int
+	gpuProduct string
 	// submittedBy string
 	jobType string
 	workers string
 )
 
 // validateJobInputs checks all job parameters for correctness.
-func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, jobType, workers string) error {
+func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory string, gpu int, gpuProduct, jobType, workers string) error {
 	var errs []string
 
 	// --- Validate job name ---
@@ -52,7 +53,7 @@ func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory s
 		errs = append(errs, fmt.Sprintf("requested memory %dMi exceeds the limit of %dMi", memVal, cfg.ResourceLimit.MaxMemory))
 	}
 
-    // --- Validate GPU ---
+	// --- Validate GPU ---
 	if gpu < 0 {
 		errs = append(errs, fmt.Sprintf("invalid GPU value %d: must be a non-negative integer", gpu))
 	}
@@ -65,7 +66,6 @@ func validateJobInputs(cfg *config.Config, jobName, image, script, cpu, memory s
 	//         cfg.ResourceLimit.MaxGPU,
 	//     ))
 	// }
-
 
 	// --- Validate job type ---
 	validTypes := map[string]bool{"default": true, "batch": true, "dask": true}
@@ -96,7 +96,7 @@ var jobSubmitCmd = &cobra.Command{
 		// if gui {
 		// 	return nil
 		// }
-		return validateJobInputs(cfg, jobName, image, script, cpu, memory, gpu, jobType, workers)
+		return validateJobInputs(cfg, jobName, image, script, cpu, memory, gpu, gpuProduct, jobType, workers)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -111,7 +111,7 @@ var jobSubmitCmd = &cobra.Command{
 		// 	return nil
 		// }
 
-		name, err := jobs.SubmitJob(cfg, jobName, image, script, cpu, memory, gpu, jobType, workers)
+		name, err := jobs.SubmitJob(cfg, jobName, image, script, cpu, memory, gpu, gpuProduct, jobType, workers)
 		if err != nil {
 			return err
 		}
@@ -129,6 +129,7 @@ func init() {
 	jobSubmitCmd.Flags().StringVar(&cpu, "cpu", "1", "CPU request")
 	jobSubmitCmd.Flags().StringVar(&memory, "memory", "1Gi", "Memory request")
 	jobSubmitCmd.Flags().IntVar(&gpu, "gpu", 0, "Number of GPUs to request")
+	jobSubmitCmd.Flags().StringVar(&gpuProduct, "gputype", "", "GPU card type to use")
 	jobSubmitCmd.Flags().StringVar(&jobType, "type", "default", "job type (default/batch/dask)")
 	jobSubmitCmd.Flags().StringVar(&workers, "nworkers", "", "number of worker nodes (for batch/dask)")
 	// jobSubmitCmd.Flags().BoolVarP(&gui, "gui", "", false, "launch a GUI")
