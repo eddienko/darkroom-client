@@ -63,6 +63,7 @@ darkroom job submit --name <jobName> --image <image> --script "<script>" --cpu <
   * `--cpu` (default 1): Number of CPUs.
   * `--memory` (default 1Gi): Memory for the job.
   * `--gpu` (default 0): Number of GPUs to use (ony in user job mode)
+  * `--gputype` (default empty): Type of GPU to submit job to, e.g. Tesla-V100-PCIE-32GB, Tesla-V100S-PCIE-32GB, NVIDIA-A100-PCIE-40GB and NVIDIA-L40S.
 
 **Example**:
 

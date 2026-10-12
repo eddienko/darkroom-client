@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.20
+
+- A new argument in job submit called `--gputype` added to select the 
+  type of GPU to send the job to.
 
 ## v0.2.17
 
